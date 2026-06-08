@@ -353,12 +353,16 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
               ),
               child: Row(
                 children: [
-                  // ignore: deprecated_member_use
                   Radio<String>(
                     value: service.id,
                     groupValue: _selectedService?.id, // ignore: deprecated_member_use
                     onChanged: (_) => setState(() => _selectedService = service), // ignore: deprecated_member_use
-                    activeColor: AppColors.primary,
+                    fillColor: WidgetStateProperty.resolveWith<Color>((states) {
+                      if (states.contains(WidgetState.selected)) {
+                        return AppColors.primary;
+                      }
+                      return AppColors.primary.withValues(alpha: 0.4);
+                    }),
                   ),
                   Expanded(
                     child: Column(

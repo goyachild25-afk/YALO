@@ -59,7 +59,7 @@ class BookingModel {
       providerId: json['provider_id'] as String,
       providerName: json['provider_name'] as String,
       providerAvatarUrl: json['provider_avatar_url'] as String?,
-      serviceId: json['service_id'] as String,
+      serviceId: json['service_id'] as String? ?? '',
       serviceName: json['service_name'] as String,
       status: BookingStatus.values.firstWhere(
         (e) => e.name == json['status'],

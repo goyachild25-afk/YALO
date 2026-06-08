@@ -39,8 +39,8 @@ Deno.serve(async (req: Request) => {
 
     // Crear PaymentIntent en Stripe
     const paymentIntent = await stripe.paymentIntents.create({
-      amount,           // En centavos (ej: 2500000 = ₡25,000)
-      currency,         // 'crc' para colones costarricenses
+      amount,           // En centavos (ej: 250000 = RD$2,500)
+      currency,         // 'dop' para pesos dominicanos
       description,
       automatic_payment_methods: { enabled: true },
       metadata: {
