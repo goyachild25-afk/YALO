@@ -1,0 +1,66 @@
+name: servicios_ya
+description: ServiciosYa — Plataforma multi-servicio del hogar para República Dominicana.
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.3.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Backend
+  supabase_flutter: ^2.5.0
+
+  # State Management
+  flutter_riverpod: ^2.5.1
+  riverpod_annotation: ^2.3.5
+
+  # Navigation
+  go_router: ^14.2.0
+
+  # Maps & Location
+  google_maps_flutter: ^2.6.0
+  geolocator: ^11.0.0
+  geocoding: ^3.0.0
+
+  # Payments
+  flutter_stripe: ^10.1.1
+
+  # UI Components
+  flutter_rating_bar: ^4.0.1
+  cached_network_image: ^3.3.1
+  shimmer: ^3.0.0
+  lottie: ^3.1.0
+  smooth_page_indicator: ^1.1.0
+  flutter_svg: ^2.0.10+1
+
+  # Utilities
+  intl: ^0.19.0
+  image_picker: ^1.1.2
+  permission_handler: ^11.3.0
+  url_launcher: ^6.3.0
+  shared_preferences: ^2.2.3
+  connectivity_plus: ^6.0.3
+  uuid: ^4.4.0
+  timeago: ^3.6.1
+
+  # Fonts
+  google_fonts: ^6.2.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+  build_runner: ^2.4.11
+  riverpod_generator: ^2.4.3
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/images/
+    - assets/icons/
+    - assets/animations/
+
