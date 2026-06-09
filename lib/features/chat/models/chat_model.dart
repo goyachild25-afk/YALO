@@ -27,8 +27,11 @@ class ChatMessage {
       senderName: json['sender_name'] as String,
       content: json['content'] as String,
       type: MessageType.values.firstWhere(
-        (e) => e.name == json['type'],
-        orElse: () => MessageType.text,
+        (e) => e.name == (json['type'] as String?)?.replaceAll('_', ''),
+        orElse: () => MessageType.values.firstWhere(
+          (e) => e.name == json['type'],
+          orElse: () => MessageType.text,
+        ),
       ),
       createdAt: DateTime.parse(json['created_at'] as String),
       isRead: json['is_read'] as bool? ?? false,
@@ -41,15 +44,37 @@ class ChatMessage {
         'sender_id': senderId,
         'sender_name': senderName,
         'content': content,
-        'type': type.name,
+        'type': typeToDb(type),
         'created_at': createdAt.toIso8601String(),
         'is_read': isRead,
       };
 
+  // Público para permitir su uso desde chat_screen.dart al insertar mensajes
+  static String typeToDb(MessageType t) {
+    switch (t) {
+      case MessageType.text: return 'text';
+      case MessageType.image: return 'image';
+      case MessageType.system: return 'system';
+      case MessageType.offer: return 'offer';
+      case MessageType.counterOffer: return 'counter_offer';
+      case MessageType.offerAccepted: return 'offer_accepted';
+      case MessageType.offerRejected: return 'offer_rejected';
+    }
+  }
+
   bool isMine(String currentUserId) => senderId == currentUserId;
 }
 
-enum MessageType { text, image, system }
+enum MessageType {
+  text,
+  image,
+  system,
+  // ── Tipos de negociación (CAMBIO 3) ─────────────────────────────────────────
+  offer,          // Prestador envía oferta → content: {"price": 2500, "description": "..."}
+  counterOffer,   // Cliente envía contraoferta → content: {"price": 2000}
+  offerAccepted,  // Alguna de las partes acepta → content: {"price": 2000, "by": "client"}
+  offerRejected,  // Alguna de las partes rechaza → content: {}
+}
 
 class ChatConversation {
   final String bookingId;
@@ -73,8 +98,9 @@ class ChatConversation {
   });
 }
 
-// Demo messages for demo mode
+// ─── Mensajes demo ───────────────────────────────────────────────────────────
 final List<ChatMessage> demoMessages = [
+  // book-p001: conversación de limpieza del hogar
   ChatMessage(
     id: 'msg-001',
     bookingId: 'book-p001',
@@ -90,7 +116,8 @@ final List<ChatMessage> demoMessages = [
     bookingId: 'book-p001',
     senderId: 'demo-provider-001',
     senderName: 'Carlos Méndez',
-    content: 'Perfecto Ana, estaré puntual. ¿Tiene materiales de limpieza o los llevo yo?',
+    content:
+        'Perfecto Ana, estaré puntual. ¿Tiene materiales de limpieza o los llevo yo?',
     type: MessageType.text,
     createdAt: DateTime.now().subtract(const Duration(hours: 1, minutes: 45)),
     isRead: true,
@@ -113,6 +140,63 @@ final List<ChatMessage> demoMessages = [
     content: 'Con gusto, los incluyo. Nos vemos mañana 👍',
     type: MessageType.text,
     createdAt: DateTime.now().subtract(const Duration(minutes: 45)),
+    isRead: false,
+  ),
+
+  // book-p002: negociación de precio (demo para mostrar flujo CAMBIO 3)
+  ChatMessage(
+    id: 'msg-010',
+    bookingId: 'book-p002',
+    senderId: 'client-009',
+    senderName: 'Jorge Ramírez',
+    content:
+        'Hola Carlos, necesito limpieza completa para la oficina de 80m². ¿Cuándo puedes y cuánto cobras?',
+    type: MessageType.text,
+    createdAt: DateTime.now().subtract(const Duration(hours: 3)),
+    isRead: true,
+  ),
+  ChatMessage(
+    id: 'msg-011',
+    bookingId: 'book-p002',
+    senderId: 'demo-provider-001',
+    senderName: 'Carlos Méndez',
+    // Oferta de precio: JSON con monto y descripción
+    content:
+        '{"price":3500,"description":"Limpieza profunda 80m²: pisos, sanitarios, escritorios y ventanas. Incluyo todos los materiales."}',
+    type: MessageType.offer,
+    createdAt: DateTime.now().subtract(const Duration(hours: 2, minutes: 30)),
+    isRead: true,
+  ),
+  ChatMessage(
+    id: 'msg-012',
+    bookingId: 'book-p002',
+    senderId: 'client-009',
+    senderName: 'Jorge Ramírez',
+    // Contraoferta del cliente
+    content: '{"price":3000}',
+    type: MessageType.counterOffer,
+    createdAt: DateTime.now().subtract(const Duration(hours: 2)),
+    isRead: true,
+  ),
+  ChatMessage(
+    id: 'msg-013',
+    bookingId: 'book-p002',
+    senderId: 'demo-provider-001',
+    senderName: 'Carlos Méndez',
+    // Oferta aceptada por el prestador
+    content: '{"price":3000,"by":"provider"}',
+    type: MessageType.offerAccepted,
+    createdAt: DateTime.now().subtract(const Duration(hours: 1, minutes: 45)),
+    isRead: true,
+  ),
+  ChatMessage(
+    id: 'msg-014',
+    bookingId: 'book-p002',
+    senderId: 'demo-provider-001',
+    senderName: 'Carlos Méndez',
+    content: 'Perfecto Jorge, acepto los RD\$3,000. ¿Confirmamos para el jueves?',
+    type: MessageType.text,
+    createdAt: DateTime.now().subtract(const Duration(hours: 1, minutes: 40)),
     isRead: false,
   ),
 ];

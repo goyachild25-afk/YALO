@@ -623,8 +623,9 @@ class _BookingRequestCardState extends ConsumerState<_BookingRequestCard> {
                     child: OutlinedButton.icon(
                       icon: const Icon(Icons.chat_bubble_outline, size: 16),
                       label: const Text('Chat'),
+                      // provider=true → activa el modo prestador en el chat (oferta de precio)
                       onPressed: () => context.push(
-                        '/chat/${booking['id']}?name=${Uri.encodeComponent(booking['client_name'] as String? ?? '')}&service=${Uri.encodeComponent(booking['service_name'] as String? ?? '')}',
+                        '/chat/${booking['id']}?name=${Uri.encodeComponent(booking['client_name'] as String? ?? '')}&service=${Uri.encodeComponent(booking['service_name'] as String? ?? '')}&provider=true',
                       ),
                     ),
                   ),

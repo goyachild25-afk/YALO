@@ -158,6 +158,8 @@ final routerProvider = Provider<GoRouter>((ref) {
               state.uri.queryParameters['name'] ?? 'Usuario'),
           serviceName: Uri.decodeComponent(
               state.uri.queryParameters['service'] ?? 'Servicio'),
+          // provider=true → el usuario actual es el prestador (puede enviar ofertas)
+          isProvider: state.uri.queryParameters['provider'] == 'true',
         ),
       ),
       GoRoute(

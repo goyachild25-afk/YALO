@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../core/constants/app_colors.dart';
@@ -26,12 +28,15 @@ class ChatScreen extends ConsumerStatefulWidget {
   final String bookingId;
   final String otherUserName;
   final String serviceName;
+  /// true cuando el usuario actual es el prestador del servicio
+  final bool isProvider;
 
   const ChatScreen({
     super.key,
     required this.bookingId,
     required this.otherUserName,
     required this.serviceName,
+    this.isProvider = false,
   });
 
   @override
@@ -43,7 +48,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   final _scrollCtrl = ScrollController();
   bool _sending = false;
 
-  // Demo: lista local de mensajes para simular envío
+  // Demo: lista local mutable para simular el envío
   final List<ChatMessage> _demoLocalMessages = [];
 
   @override
@@ -73,6 +78,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     });
   }
 
+  // ── Enviar mensaje de texto ───────────────────────────────────────────────────
   Future<void> _send() async {
     final text = _textCtrl.text.trim();
     if (text.isEmpty || _sending) return;
@@ -130,6 +136,194 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     }
   }
 
+  // ── Prestador: enviar oferta de precio ───────────────────────────────────────
+  Future<void> _showSendOfferDialog() async {
+    final priceCtrl = TextEditingController();
+    final descCtrl = TextEditingController();
+
+    final confirmed = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => _OfferBottomSheet(
+        priceCtrl: priceCtrl,
+        descCtrl: descCtrl,
+        title: 'Enviar oferta de precio',
+        actionLabel: 'Enviar oferta',
+        actionColor: AppColors.primary,
+      ),
+    );
+
+    if (!mounted) return;
+    if (confirmed != true) {
+      priceCtrl.dispose();
+      descCtrl.dispose();
+      return;
+    }
+
+    final price = double.tryParse(priceCtrl.text.trim());
+    if (price == null || price <= 0) {
+      priceCtrl.dispose();
+      descCtrl.dispose();
+      return;
+    }
+    final description = descCtrl.text.trim();
+    priceCtrl.dispose();
+    descCtrl.dispose();
+
+    await _insertNegotiationMessage(
+      type: MessageType.offer,
+      content: jsonEncode({'price': price, 'description': description}),
+      bookingUpdates: {
+        'negotiation_status': 'offer_sent',
+        'provider_offer': price,
+        if (description.isNotEmpty) 'offer_description': description,
+      },
+    );
+  }
+
+  // ── Cliente: responder oferta ─────────────────────────────────────────────────
+  Future<void> _acceptOffer(double price) async {
+    await _insertNegotiationMessage(
+      type: MessageType.offerAccepted,
+      content: jsonEncode({'price': price, 'by': 'client'}),
+      bookingUpdates: {
+        'negotiation_status': 'agreed',
+        'agreed_price': price,
+      },
+    );
+  }
+
+  Future<void> _sendCounterOffer(double offerPrice) async {
+    final priceCtrl = TextEditingController();
+
+    final confirmed = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => _OfferBottomSheet(
+        priceCtrl: priceCtrl,
+        descCtrl: null,
+        title: 'Tu contraoferta',
+        actionLabel: 'Enviar contraoferta',
+        actionColor: AppColors.info,
+        hintText:
+            'La oferta fue RD\$${offerPrice.toStringAsFixed(0)}. Ingresa tu precio.',
+      ),
+    );
+
+    if (!mounted) return;
+    if (confirmed != true) { priceCtrl.dispose(); return; }
+
+    final price = double.tryParse(priceCtrl.text.trim());
+    priceCtrl.dispose();
+    if (price == null || price <= 0) return;
+
+    await _insertNegotiationMessage(
+      type: MessageType.counterOffer,
+      content: jsonEncode({'price': price}),
+      bookingUpdates: {
+        'negotiation_status': 'counter_offer_sent',
+        'client_counter_offer': price,
+      },
+    );
+  }
+
+  // ── Prestador: responder contraoferta ────────────────────────────────────────
+  Future<void> _acceptCounterOffer(double price) async {
+    await _insertNegotiationMessage(
+      type: MessageType.offerAccepted,
+      content: jsonEncode({'price': price, 'by': 'provider'}),
+      bookingUpdates: {
+        'negotiation_status': 'agreed',
+        'agreed_price': price,
+      },
+    );
+  }
+
+  Future<void> _rejectOffer() async {
+    await _insertNegotiationMessage(
+      type: MessageType.offerRejected,
+      content: jsonEncode({}),
+      bookingUpdates: {'negotiation_status': 'offer_rejected'},
+    );
+  }
+
+  // ── Helper común para mensajes de negociación ─────────────────────────────────
+  Future<void> _insertNegotiationMessage({
+    required MessageType type,
+    required String content,
+    required Map<String, dynamic> bookingUpdates,
+  }) async {
+    setState(() => _sending = true);
+
+    final isDemo = ref.read(demoModeProvider);
+    if (isDemo) {
+      final user = ref.read(demoUserProvider)!;
+      if (mounted) {
+        setState(() {
+          _demoLocalMessages.add(ChatMessage(
+            id: 'demo-${DateTime.now().millisecondsSinceEpoch}',
+            bookingId: widget.bookingId,
+            senderId: user.id,
+            senderName: user.fullName,
+            content: content,
+            type: type,
+            createdAt: DateTime.now(),
+          ));
+          _sending = false;
+        });
+        _scrollToBottom();
+      }
+      return;
+    }
+
+    try {
+      final user = SupabaseService.currentUser!;
+      final profile = await SupabaseService.client
+          .from('profiles')
+          .select('full_name')
+          .eq('id', user.id)
+          .single();
+
+      // Insertar mensaje en chat
+      await SupabaseService.client.from('chat_messages').insert({
+        'booking_id': widget.bookingId,
+        'sender_id': user.id,
+        'sender_name': profile['full_name'],
+        'content': content,
+        'type': ChatMessage.typeToDb(type),
+        'is_read': false,
+        'created_at': DateTime.now().toIso8601String(),
+      });
+
+      // Actualizar estado de negociación en bookings (requiere migración v2)
+      try {
+        await SupabaseService.client.from('bookings').update({
+          ...bookingUpdates,
+          'updated_at': DateTime.now().toIso8601String(),
+        }).eq('id', widget.bookingId);
+      } catch (_) {
+        // Columnas de negociación no existen aún — la migración v2 no se ha ejecutado.
+        // El chat sigue funcionando; solo el estado del booking no se actualiza.
+      }
+
+      _scrollToBottom();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _sending = false);
+    }
+  }
+
+  // ── Build ─────────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
     final isDemo = ref.watch(demoModeProvider);
@@ -162,7 +356,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               children: [
                 Text(
                   widget.otherUserName,
-                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                  style: const TextStyle(
+                      fontSize: 15, fontWeight: FontWeight.w600),
                 ),
                 Text(
                   widget.serviceName,
@@ -187,21 +382,36 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           _buildInputBar(),
         ],
       ),
+      // Botón flotante para enviar oferta (solo para prestadores)
+      floatingActionButton: widget.isProvider
+          ? FloatingActionButton.extended(
+              onPressed: _showSendOfferDialog,
+              backgroundColor: AppColors.primary,
+              icon: const Icon(Icons.local_offer_outlined,
+                  color: Colors.white, size: 18),
+              label: const Text('Enviar oferta',
+                  style: TextStyle(color: Colors.white, fontSize: 13)),
+            )
+          : null,
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 
   Widget _buildDemoMessages(String currentUserId) {
     _scrollToBottom();
-    if (_demoLocalMessages.isEmpty) {
-      return _buildEmptyChat();
-    }
+    if (_demoLocalMessages.isEmpty) return _buildEmptyChat();
     return ListView.builder(
       controller: _scrollCtrl,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 80),
       itemCount: _demoLocalMessages.length,
       itemBuilder: (_, i) => _MessageBubble(
         message: _demoLocalMessages[i],
         isMine: _demoLocalMessages[i].isMine(currentUserId),
+        isProvider: widget.isProvider,
+        onAcceptOffer: _acceptOffer,
+        onCounterOffer: _sendCounterOffer,
+        onAcceptCounterOffer: _acceptCounterOffer,
+        onRejectOffer: _rejectOffer,
       ),
     );
   }
@@ -216,11 +426,16 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         _scrollToBottom();
         return ListView.builder(
           controller: _scrollCtrl,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 80),
           itemCount: messages.length,
           itemBuilder: (_, i) => _MessageBubble(
             message: messages[i],
             isMine: messages[i].isMine(currentUserId),
+            isProvider: widget.isProvider,
+            onAcceptOffer: _acceptOffer,
+            onCounterOffer: _sendCounterOffer,
+            onAcceptCounterOffer: _acceptCounterOffer,
+            onRejectOffer: _rejectOffer,
           ),
         );
       },
@@ -234,7 +449,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         children: [
           Container(
             padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               color: AppColors.surfaceVariant,
               shape: BoxShape.circle,
             ),
@@ -251,7 +466,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           ),
           const SizedBox(height: 6),
           const Text(
-            'Coordina los detalles del servicio aquí',
+            'Coordina los detalles y el precio del servicio aquí',
             style: TextStyle(fontSize: 12, color: AppColors.textHint),
           ),
         ],
@@ -313,7 +528,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                       child: CircularProgressIndicator(
                           strokeWidth: 2, color: Colors.white),
                     )
-                  : const Icon(Icons.send_rounded, color: Colors.white, size: 20),
+                  : const Icon(Icons.send_rounded,
+                      color: Colors.white, size: 20),
             ),
           ),
         ],
@@ -322,14 +538,43 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   }
 }
 
+// ═════════════════════════════════════════════════════════════════════════════
+// BURBUJA DE MENSAJE (texto + oferta + contraoferta + aceptado + rechazado)
+// ═════════════════════════════════════════════════════════════════════════════
 class _MessageBubble extends StatelessWidget {
   final ChatMessage message;
   final bool isMine;
+  final bool isProvider;
+  final void Function(double price) onAcceptOffer;
+  final void Function(double offerPrice) onCounterOffer;
+  final void Function(double price) onAcceptCounterOffer;
+  final VoidCallback onRejectOffer;
 
-  const _MessageBubble({required this.message, required this.isMine});
+  const _MessageBubble({
+    required this.message,
+    required this.isMine,
+    required this.isProvider,
+    required this.onAcceptOffer,
+    required this.onCounterOffer,
+    required this.onAcceptCounterOffer,
+    required this.onRejectOffer,
+  });
 
   @override
   Widget build(BuildContext context) {
+    // Tipos especiales: renderizado centrado
+    if (message.type == MessageType.offerAccepted ||
+        message.type == MessageType.offerRejected) {
+      return _buildStatusMessage(context);
+    }
+
+    // Oferta / contraoferta: burbuja especial
+    if (message.type == MessageType.offer ||
+        message.type == MessageType.counterOffer) {
+      return _buildOfferBubble(context);
+    }
+
+    // Mensaje de texto normal
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
@@ -393,14 +638,362 @@ class _MessageBubble extends StatelessWidget {
                 Text(
                   DateFormat('HH:mm').format(message.createdAt),
                   style: const TextStyle(
-                    fontSize: 10,
-                    color: AppColors.textHint,
-                  ),
+                      fontSize: 10, color: AppColors.textHint),
                 ),
               ],
             ),
           ),
           if (isMine) const SizedBox(width: 6),
+        ],
+      ),
+    );
+  }
+
+  // ── Burbuja de oferta / contraoferta ─────────────────────────────────────────
+  Widget _buildOfferBubble(BuildContext context) {
+    final isOffer = message.type == MessageType.offer;
+    final Map<String, dynamic> data = _parseJson(message.content);
+    final price = (data['price'] as num?)?.toDouble() ?? 0;
+    final description = data['description'] as String? ?? '';
+
+    // ¿Quién puede accionar?
+    // Oferta → solo puede accionar el cliente (si no es el prestador)
+    // Contraoferta → solo puede accionar el prestador
+    final canAct = isOffer ? !isProvider : isProvider;
+
+    final Color cardColor = isOffer ? AppColors.primaryLighter : AppColors.infoLight;
+    final Color borderColor = isOffer ? AppColors.primary : AppColors.info;
+    final Color textColor = isOffer ? AppColors.primaryDark : AppColors.info;
+    final IconData icon = isOffer
+        ? Icons.local_offer_outlined
+        : Icons.reply_outlined;
+    final String header = isOffer
+        ? '💰 Oferta de precio'
+        : '↩️ Contraoferta del cliente';
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Center(
+        child: Container(
+          width: double.infinity,
+          margin: const EdgeInsets.symmetric(horizontal: 16),
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: cardColor,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: borderColor.withValues(alpha: 0.5)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Encabezado
+              Row(
+                children: [
+                  Icon(icon, color: textColor, size: 16),
+                  const SizedBox(width: 6),
+                  Text(
+                    header,
+                    style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: textColor),
+                  ),
+                  const Spacer(),
+                  Text(
+                    DateFormat('HH:mm').format(message.createdAt),
+                    style: const TextStyle(
+                        fontSize: 10, color: AppColors.textHint),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+
+              // Precio
+              Text(
+                'RD\$${price.toStringAsFixed(0)}',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w800,
+                  color: textColor,
+                ),
+              ),
+              if (description.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Text(
+                  description,
+                  style: const TextStyle(
+                      fontSize: 12,
+                      color: AppColors.textSecondary,
+                      height: 1.4),
+                ),
+              ],
+
+              // Botones de acción (solo si la parte correcta los ve)
+              if (canAct) ...[
+                const SizedBox(height: 12),
+                if (isOffer) ...[
+                  // Cliente: aceptar o contraofertar
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: AppColors.info,
+                            side: const BorderSide(color: AppColors.info),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10)),
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                          ),
+                          icon: const Icon(Icons.reply, size: 14),
+                          label: const Text('Contraofertar',
+                              style: TextStyle(fontSize: 12)),
+                          onPressed: () => onCounterOffer(price),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.success,
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10)),
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                          ),
+                          icon: const Icon(Icons.check, size: 14,
+                              color: Colors.white),
+                          label: const Text('Aceptar',
+                              style: TextStyle(
+                                  fontSize: 12, color: Colors.white)),
+                          onPressed: () => onAcceptOffer(price),
+                        ),
+                      ),
+                    ],
+                  ),
+                ] else ...[
+                  // Prestador: aceptar o rechazar contraoferta
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: AppColors.error,
+                            side: const BorderSide(color: AppColors.error),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10)),
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                          ),
+                          icon: const Icon(Icons.close, size: 14),
+                          label: const Text('Rechazar',
+                              style: TextStyle(fontSize: 12)),
+                          onPressed: onRejectOffer,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.success,
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10)),
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                          ),
+                          icon: const Icon(Icons.check, size: 14,
+                              color: Colors.white),
+                          label: const Text('Aceptar contraoferta',
+                              style: TextStyle(
+                                  fontSize: 11, color: Colors.white)),
+                          onPressed: () => onAcceptCounterOffer(price),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ── Mensaje de estado (aceptado / rechazado) ──────────────────────────────────
+  Widget _buildStatusMessage(BuildContext context) {
+    final isAccepted = message.type == MessageType.offerAccepted;
+    final Map<String, dynamic> data = _parseJson(message.content);
+    final price = (data['price'] as num?)?.toDouble();
+    final by = data['by'] as String?;
+    final byLabel = by == 'client' ? 'el cliente' : 'el prestador';
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 24),
+      child: Center(
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          decoration: BoxDecoration(
+            color: isAccepted ? AppColors.successLight : AppColors.errorLight,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: isAccepted
+                  ? AppColors.success.withValues(alpha: 0.4)
+                  : AppColors.error.withValues(alpha: 0.4),
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                isAccepted ? Icons.handshake_outlined : Icons.cancel_outlined,
+                size: 16,
+                color: isAccepted ? AppColors.success : AppColors.error,
+              ),
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(
+                  isAccepted
+                      ? price != null
+                          ? '✅ Precio acordado: RD\$${price.toStringAsFixed(0)} — aceptado por $byLabel'
+                          : '✅ Precio acordado'
+                      : '❌ Oferta rechazada',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color:
+                        isAccepted ? AppColors.success : AppColors.error,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Map<String, dynamic> _parseJson(String content) {
+    try {
+      final decoded = jsonDecode(content);
+      if (decoded is Map<String, dynamic>) return decoded;
+    } catch (_) {}
+    return {};
+  }
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// BOTTOM SHEET PARA ENVIAR OFERTA / CONTRAOFERTA
+// ═════════════════════════════════════════════════════════════════════════════
+class _OfferBottomSheet extends StatelessWidget {
+  final TextEditingController priceCtrl;
+  final TextEditingController? descCtrl;
+  final String title;
+  final String actionLabel;
+  final Color actionColor;
+  final String? hintText;
+
+  const _OfferBottomSheet({
+    required this.priceCtrl,
+    this.descCtrl,
+    required this.title,
+    required this.actionLabel,
+    required this.actionColor,
+    this.hintText,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.fromLTRB(
+          24, 24, 24, MediaQuery.of(context).viewInsets.bottom + 24),
+      decoration: const BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Handle
+          Center(
+            child: Container(
+              width: 40, height: 4,
+              decoration: BoxDecoration(
+                color: AppColors.divider,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          Text(
+            title,
+            style: const TextStyle(
+                fontSize: 17, fontWeight: FontWeight.w700),
+          ),
+          if (hintText != null) ...[
+            const SizedBox(height: 4),
+            Text(hintText!,
+                style: const TextStyle(
+                    fontSize: 12, color: AppColors.textSecondary)),
+          ],
+          const SizedBox(height: 16),
+
+          // Campo de precio
+          TextField(
+            controller: priceCtrl,
+            keyboardType:
+                const TextInputType.numberWithOptions(decimal: true),
+            inputFormatters: [
+              FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+            ],
+            autofocus: true,
+            decoration: InputDecoration(
+              labelText: 'Precio (RD\$)',
+              prefixIcon: const Icon(Icons.attach_money,
+                  color: AppColors.primary),
+              border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12)),
+            ),
+          ),
+
+          if (descCtrl != null) ...[
+            const SizedBox(height: 12),
+            TextField(
+              controller: descCtrl,
+              maxLines: 3,
+              decoration: InputDecoration(
+                labelText: 'Descripción (opcional)',
+                hintText:
+                    'Detalla qué incluye el precio, materiales, tiempo estimado...',
+                hintStyle: const TextStyle(fontSize: 12),
+                border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ],
+          const SizedBox(height: 20),
+
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () => Navigator.of(context).pop(false),
+                  child: const Text('Cancelar'),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: actionColor,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                  ),
+                  onPressed: () => Navigator.of(context).pop(true),
+                  child: Text(actionLabel),
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );
