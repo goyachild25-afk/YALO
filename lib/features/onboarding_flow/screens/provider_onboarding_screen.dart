@@ -33,7 +33,19 @@ class _ProviderOnboardingScreenState
   int _step = 0;
   bool _saving = false;
 
-  // ── Paso 1 ──────────────────────────────────────────────────────────────────
+  // ── Paso 0 — Cuestionario ────────────────────────────────────────────────────
+  // { categoryId → { questionId → answer (true=Sí / false=No) } }
+  final Map<String, Map<String, bool>> _questAnswers = {};
+
+  /// Categorías habilitadas: al menos una pregunta respondida con "Sí"
+  Set<String> get _enabledCategories => Set<String>.from(
+        kServiceCategories
+            .map((c) => c['id']!)
+            .where((id) =>
+                _questAnswers[id]?.values.any((v) => v) ?? false),
+      );
+
+  // ── Paso 1 — Perfil personal ─────────────────────────────────────────────────
   final _formKey1 = GlobalKey<FormState>();
   final _phoneCtrl = TextEditingController();
   final _cityCtrl = TextEditingController();
@@ -43,11 +55,11 @@ class _ProviderOnboardingScreenState
   String? _avatarExt;
   String? _uploadedAvatarUrl;
 
-  // ── Paso 2 ──────────────────────────────────────────────────────────────────
+  // ── Paso 2 — Selección de servicios ─────────────────────────────────────────
   final Set<String> _selectedIds = {};
   final Map<String, _ServiceConfig> _serviceConfigs = {};
 
-  // ── Paso 3 ──────────────────────────────────────────────────────────────────
+  // ── Paso 3 — Verificación de identidad ──────────────────────────────────────
   final _formKey3 = GlobalKey<FormState>();
   final _cedulaCtrl = TextEditingController();
   Uint8List? _frontBytes;
@@ -112,7 +124,7 @@ class _ProviderOnboardingScreenState
           );
       return SupabaseService.client.storage.from(bucket).getPublicUrl(path);
     } catch (_) {
-      return null; // bucket may not exist yet — fail silently
+      return null; // bucket puede no existir aún
     }
   }
 
@@ -126,14 +138,28 @@ class _ProviderOnboardingScreenState
     );
   }
 
-  // ── Guardar paso 1 ───────────────────────────────────────────────────────────
+  // ── Guardar paso 0 — Cuestionario ────────────────────────────────────────────
+  Future<void> _saveStep0() async {
+    if (_enabledCategories.isEmpty) {
+      _showError(
+          'Responde "Sí" a al menos una pregunta para habilitar alguna categoría');
+      return;
+    }
+    // Las respuestas se guardan en DB junto al perfil en _saveStep1
+    _goToStep(1);
+  }
+
+  // ── Guardar paso 1 — Perfil personal ─────────────────────────────────────────
   Future<void> _saveStep1() async {
     if (!_formKey1.currentState!.validate()) return;
     setState(() => _saving = true);
 
     try {
       final user = SupabaseService.currentUser;
-      if (user == null) { context.go('/login'); return; }
+      if (user == null) {
+        if (mounted) context.go('/login');
+        return;
+      }
 
       // Subir avatar si se seleccionó
       if (_avatarBytes != null) {
@@ -147,6 +173,16 @@ class _ProviderOnboardingScreenState
         );
       }
 
+      // Construir JSON de respuestas del cuestionario
+      final answersJson = <String, dynamic>{};
+      for (final entry in _questAnswers.entries) {
+        final catAnswers = entry.value;
+        answersJson[entry.key] = <String, dynamic>{
+          ...catAnswers,
+          'enabled': catAnswers.values.any((v) => v),
+        };
+      }
+
       // Actualizar profiles
       await SupabaseService.client.from('profiles').upsert({
         'id': user.id,
@@ -157,10 +193,8 @@ class _ProviderOnboardingScreenState
         'updated_at': DateTime.now().toIso8601String(),
       });
 
-      // Actualizar provider_profiles
-      await SupabaseService.client
-          .from('provider_profiles')
-          .upsert({
+      // Actualizar provider_profiles (incluye onboarding_answers del cuestionario)
+      await SupabaseService.client.from('provider_profiles').upsert({
         'user_id': user.id,
         'full_name': (await SupabaseService.client
                     .from('profiles')
@@ -173,11 +207,12 @@ class _ProviderOnboardingScreenState
         'province': _province ?? '',
         'city': _cityCtrl.text.trim(),
         if (_uploadedAvatarUrl != null) 'avatar_url': _uploadedAvatarUrl,
+        if (answersJson.isNotEmpty) 'onboarding_answers': answersJson,
         'updated_at': DateTime.now().toIso8601String(),
       }, onConflict: 'user_id');
 
       ref.invalidate(currentUserProvider);
-      if (mounted) _goToStep(1);
+      if (mounted) _goToStep(2);
     } catch (e) {
       _showError(e.toString());
     } finally {
@@ -185,13 +220,12 @@ class _ProviderOnboardingScreenState
     }
   }
 
-  // ── Guardar paso 2 ───────────────────────────────────────────────────────────
+  // ── Guardar paso 2 — Servicios ───────────────────────────────────────────────
   Future<void> _saveStep2() async {
     if (_selectedIds.isEmpty) {
       _showError('Selecciona al menos un servicio');
       return;
     }
-    // Validar que servicios fijos tengan precio
     for (final id in _selectedIds) {
       final cfg = _serviceConfigs[id]!;
       if (cfg.pricingType == 'fixed') {
@@ -206,9 +240,11 @@ class _ProviderOnboardingScreenState
 
     try {
       final user = SupabaseService.currentUser;
-      if (user == null) { context.go('/login'); return; }
+      if (user == null) {
+        if (mounted) context.go('/login');
+        return;
+      }
 
-      // Obtener provider_profile id
       final profileRow = await SupabaseService.client
           .from('provider_profiles')
           .select('id')
@@ -221,13 +257,11 @@ class _ProviderOnboardingScreenState
       }
       final providerId = profileRow['id'] as String;
 
-      // Eliminar servicios anteriores (si el usuario volvió atrás)
       await SupabaseService.client
           .from('provider_services')
           .delete()
           .eq('provider_id', providerId);
 
-      // Insertar servicios seleccionados
       const uuid = Uuid();
       final rows = _selectedIds.map((catId) {
         final cat = kServiceCategories.firstWhere((c) => c['id'] == catId);
@@ -248,7 +282,7 @@ class _ProviderOnboardingScreenState
 
       await SupabaseService.client.from('provider_services').insert(rows);
 
-      if (mounted) _goToStep(2);
+      if (mounted) _goToStep(3);
     } catch (e) {
       _showError(e.toString());
     } finally {
@@ -256,7 +290,7 @@ class _ProviderOnboardingScreenState
     }
   }
 
-  // ── Guardar paso 3 ───────────────────────────────────────────────────────────
+  // ── Guardar paso 3 — Verificación ────────────────────────────────────────────
   Future<void> _saveStep3() async {
     if (!_formKey3.currentState!.validate()) return;
     if (_frontBytes == null || _backBytes == null || _selfieBytes == null) {
@@ -267,9 +301,11 @@ class _ProviderOnboardingScreenState
 
     try {
       final user = SupabaseService.currentUser;
-      if (user == null) { context.go('/login'); return; }
+      if (user == null) {
+        if (mounted) context.go('/login');
+        return;
+      }
 
-      // Subir documentos de verificación
       final frontUrl = await _uploadBytes(
         bucket: 'verification-docs',
         path: '${user.id}/cedula_front.${_frontExt ?? 'jpg'}',
@@ -289,7 +325,6 @@ class _ProviderOnboardingScreenState
         ext: _selfieExt ?? 'jpg',
       );
 
-      // Intentar guardar en provider_profiles (si las columnas existen)
       try {
         await SupabaseService.client
             .from('provider_profiles')
@@ -298,7 +333,6 @@ class _ProviderOnboardingScreenState
         }).eq('user_id', user.id);
       } catch (_) {}
 
-      // Intentar insertar en verification_requests si la tabla existe
       try {
         await SupabaseService.client.from('verification_requests').upsert({
           'user_id': user.id,
@@ -311,7 +345,6 @@ class _ProviderOnboardingScreenState
         }, onConflict: 'user_id');
       } catch (_) {}
 
-      // Marcar como enviado localmente (independiente del DB)
       await markVerificationSubmitted(user.id);
       await markOnboardingComplete(user.id);
       ref.invalidate(currentUserProvider);
@@ -326,10 +359,7 @@ class _ProviderOnboardingScreenState
 
   void _showError(String msg) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(msg),
-        backgroundColor: AppColors.error,
-      ),
+      SnackBar(content: Text(msg), backgroundColor: AppColors.error),
     );
   }
 
@@ -339,15 +369,27 @@ class _ProviderOnboardingScreenState
       body: SafeArea(
         child: Column(
           children: [
-            // ── Progress header ───────────────────────────────────────────
             _OnboardingHeader(currentStep: _step),
-
-            // ── Page content ──────────────────────────────────────────────
             Expanded(
               child: PageView(
                 controller: _pageCtrl,
                 physics: const NeverScrollableScrollPhysics(),
                 children: [
+                  // PASO 0: Cuestionario de habilitación
+                  _Step0Questionnaire(
+                    questAnswers: _questAnswers,
+                    enabledCount: _enabledCategories.length,
+                    saving: _saving,
+                    onAnswerChanged: (catId, qId, value) {
+                      setState(() {
+                        _questAnswers.putIfAbsent(catId, () => {});
+                        _questAnswers[catId]![qId] = value;
+                      });
+                    },
+                    onNext: _saveStep0,
+                  ),
+
+                  // PASO 1: Perfil personal
                   _Step1PersonalInfo(
                     formKey: _formKey1,
                     phoneCtrl: _phoneCtrl,
@@ -366,11 +408,15 @@ class _ProviderOnboardingScreenState
                         });
                       }
                     },
+                    onBack: () => _goToStep(0),
                     onNext: _saveStep1,
                   ),
+
+                  // PASO 2: Servicios
                   _Step2Services(
                     selectedIds: _selectedIds,
                     serviceConfigs: _serviceConfigs,
+                    enabledCategoryIds: _enabledCategories,
                     saving: _saving,
                     onToggleCategory: (id) {
                       setState(() {
@@ -386,9 +432,11 @@ class _ProviderOnboardingScreenState
                     onConfigChanged: (id, cfg) {
                       setState(() => _serviceConfigs[id] = cfg);
                     },
-                    onBack: () => _goToStep(0),
+                    onBack: () => _goToStep(1),
                     onNext: _saveStep2,
                   ),
+
+                  // PASO 3: Verificación
                   _Step3Verification(
                     formKey: _formKey3,
                     cedulaCtrl: _cedulaCtrl,
@@ -398,17 +446,32 @@ class _ProviderOnboardingScreenState
                     saving: _saving,
                     onPickFront: () async {
                       final (bytes, ext) = await _pickImage();
-                      if (bytes != null) setState(() { _frontBytes = bytes; _frontExt = ext; });
+                      if (bytes != null) {
+                        setState(() {
+                          _frontBytes = bytes;
+                          _frontExt = ext;
+                        });
+                      }
                     },
                     onPickBack: () async {
                       final (bytes, ext) = await _pickImage();
-                      if (bytes != null) setState(() { _backBytes = bytes; _backExt = ext; });
+                      if (bytes != null) {
+                        setState(() {
+                          _backBytes = bytes;
+                          _backExt = ext;
+                        });
+                      }
                     },
                     onPickSelfie: () async {
                       final (bytes, ext) = await _pickImage();
-                      if (bytes != null) setState(() { _selfieBytes = bytes; _selfieExt = ext; });
+                      if (bytes != null) {
+                        setState(() {
+                          _selfieBytes = bytes;
+                          _selfieExt = ext;
+                        });
+                      }
                     },
-                    onBack: () => _goToStep(1),
+                    onBack: () => _goToStep(2),
                     onFinish: _saveStep3,
                   ),
                 ],
@@ -422,21 +485,23 @@ class _ProviderOnboardingScreenState
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
-// HEADER CON BARRA DE PROGRESO
+// HEADER CON BARRA DE PROGRESO (4 pasos)
 // ═════════════════════════════════════════════════════════════════════════════
 class _OnboardingHeader extends StatelessWidget {
   final int currentStep;
   const _OnboardingHeader({required this.currentStep});
 
   static const _titles = [
+    'Cuestionario',
     'Perfil personal',
     'Mis servicios',
     'Verificación',
   ];
   static const _subtitles = [
-    'Paso 1 de 3',
-    'Paso 2 de 3',
-    'Paso 3 de 3',
+    'Paso 1 de 4',
+    'Paso 2 de 4',
+    'Paso 3 de 4',
+    'Paso 4 de 4',
   ];
 
   @override
@@ -466,13 +531,13 @@ class _OnboardingHeader extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          // Progress bar
+          // 4 barras de progreso
           Row(
-            children: List.generate(3, (i) {
+            children: List.generate(4, (i) {
               return Expanded(
                 child: Container(
                   height: 4,
-                  margin: EdgeInsets.only(right: i < 2 ? 4 : 0),
+                  margin: EdgeInsets.only(right: i < 3 ? 4 : 0),
                   decoration: BoxDecoration(
                     color: i <= currentStep
                         ? Colors.white
@@ -484,6 +549,263 @@ class _OnboardingHeader extends StatelessWidget {
             }),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// PASO 0 — CUESTIONARIO DE HABILITACIÓN
+// ═════════════════════════════════════════════════════════════════════════════
+class _Step0Questionnaire extends StatelessWidget {
+  final Map<String, Map<String, bool>> questAnswers;
+  final int enabledCount;
+  final bool saving;
+  final void Function(String catId, String qId, bool value) onAnswerChanged;
+  final VoidCallback onNext;
+
+  const _Step0Questionnaire({
+    required this.questAnswers,
+    required this.enabledCount,
+    required this.saving,
+    required this.onAnswerChanged,
+    required this.onNext,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Banner de progreso
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: enabledCount > 0
+                  ? AppColors.successLight
+                  : AppColors.surfaceVariant,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: enabledCount > 0
+                    ? AppColors.success
+                    : AppColors.divider,
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  enabledCount > 0
+                      ? Icons.check_circle_outline
+                      : Icons.quiz_outlined,
+                  color: enabledCount > 0
+                      ? AppColors.success
+                      : AppColors.textHint,
+                  size: 18,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    enabledCount > 0
+                        ? '$enabledCount de ${kServiceCategories.length} categorías habilitadas'
+                        : 'Responde las preguntas para habilitar categorías',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: enabledCount > 0
+                          ? AppColors.success
+                          : AppColors.textSecondary,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 10),
+          const Text(
+            'Solo podrás ofrecer servicios en las categorías que habilites respondiendo "Sí" a las preguntas.',
+            style: TextStyle(
+                fontSize: 12,
+                color: AppColors.textSecondary,
+                height: 1.4),
+          ),
+          const SizedBox(height: 16),
+
+          // Tarjeta por cada categoría
+          ...kServiceCategories.map((cat) {
+            final catId = cat['id']!;
+            final questions = kCategoryQuestions[catId] ?? [];
+            final answers = questAnswers[catId] ?? {};
+            final isEnabled = answers.values.any((v) => v);
+            return _CategoryQuestionCard(
+              category: cat,
+              questions: questions,
+              answers: answers,
+              isEnabled: isEnabled,
+              onAnswerChanged: (qId, value) =>
+                  onAnswerChanged(catId, qId, value),
+            );
+          }),
+
+          const SizedBox(height: 24),
+          PrimaryButton(
+            label: 'Continuar',
+            onPressed: onNext,
+            isLoading: saving,
+            icon: Icons.arrow_forward_rounded,
+          ),
+          const SizedBox(height: 24),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Tarjeta de preguntas por categoría ──────────────────────────────────────
+class _CategoryQuestionCard extends StatelessWidget {
+  final Map<String, String> category;
+  final List<Map<String, String>> questions;
+  final Map<String, bool> answers;
+  final bool isEnabled;
+  final void Function(String qId, bool value) onAnswerChanged;
+
+  const _CategoryQuestionCard({
+    required this.category,
+    required this.questions,
+    required this.answers,
+    required this.isEnabled,
+    required this.onAnswerChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: isEnabled
+            ? AppColors.successLight.withValues(alpha: 0.25)
+            : AppColors.surfaceVariant,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: isEnabled ? AppColors.success : AppColors.divider,
+          width: isEnabled ? 1.5 : 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Encabezado
+          Row(
+            children: [
+              Text(category['emoji']!, style: const TextStyle(fontSize: 20)),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  category['name']!,
+                  style: const TextStyle(
+                      fontWeight: FontWeight.w700, fontSize: 14),
+                ),
+              ),
+              if (isEnabled)
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: AppColors.success,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Text(
+                    '✓ Habilitado',
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 10),
+
+          // Preguntas con chips Sí/No
+          ...questions.map((q) {
+            final qId = q['id']!;
+            final answer = answers[qId];
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    q['text']!,
+                    style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
+                        height: 1.3),
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      _YesNoChip(
+                        label: 'Sí',
+                        selected: answer == true,
+                        isYes: true,
+                        onTap: () => onAnswerChanged(qId, true),
+                      ),
+                      const SizedBox(width: 8),
+                      _YesNoChip(
+                        label: 'No',
+                        selected: answer == false,
+                        isYes: false,
+                        onTap: () => onAnswerChanged(qId, false),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Chip Sí / No ─────────────────────────────────────────────────────────────
+class _YesNoChip extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final bool isYes;
+  final VoidCallback onTap;
+
+  const _YesNoChip({
+    required this.label,
+    required this.selected,
+    required this.isYes,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final color = isYes ? AppColors.success : AppColors.error;
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 6),
+        decoration: BoxDecoration(
+          color: selected ? color : Colors.transparent,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: selected ? color : AppColors.divider),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: selected ? Colors.white : AppColors.textSecondary,
+          ),
+        ),
       ),
     );
   }
@@ -502,6 +824,7 @@ class _Step1PersonalInfo extends StatelessWidget {
   final bool saving;
   final ValueChanged<String?> onProvinceChanged;
   final VoidCallback onPickAvatar;
+  final VoidCallback onBack;
   final VoidCallback onNext;
 
   const _Step1PersonalInfo({
@@ -514,6 +837,7 @@ class _Step1PersonalInfo extends StatelessWidget {
     required this.saving,
     required this.onProvinceChanged,
     required this.onPickAvatar,
+    required this.onBack,
     required this.onNext,
   });
 
@@ -588,8 +912,7 @@ class _Step1PersonalInfo extends StatelessWidget {
                   .map((p) => DropdownMenuItem(value: p, child: Text(p)))
                   .toList(),
               onChanged: onProvinceChanged,
-              validator: (v) =>
-                  v == null ? 'Selecciona tu provincia' : null,
+              validator: (v) => v == null ? 'Selecciona tu provincia' : null,
             ),
             const SizedBox(height: 12),
             AppTextField(
@@ -624,19 +947,32 @@ class _Step1PersonalInfo extends StatelessWidget {
                   '$count caracteres',
                   style: TextStyle(
                     fontSize: 11,
-                    color: count >= 50
-                        ? AppColors.success
-                        : AppColors.textHint,
+                    color:
+                        count >= 50 ? AppColors.success : AppColors.textHint,
                   ),
                 );
               },
             ),
             const SizedBox(height: 28),
-            PrimaryButton(
-              label: 'Continuar',
-              onPressed: onNext,
-              isLoading: saving,
-              icon: Icons.arrow_forward_rounded,
+            Row(
+              children: [
+                Expanded(
+                  child: SecondaryButton(
+                    label: 'Atrás',
+                    onPressed: onBack,
+                    icon: Icons.arrow_back_rounded,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: PrimaryButton(
+                    label: 'Continuar',
+                    onPressed: onNext,
+                    isLoading: saving,
+                    icon: Icons.arrow_forward_rounded,
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 24),
           ],
@@ -652,6 +988,7 @@ class _Step1PersonalInfo extends StatelessWidget {
 class _Step2Services extends StatelessWidget {
   final Set<String> selectedIds;
   final Map<String, _ServiceConfig> serviceConfigs;
+  final Set<String> enabledCategoryIds;
   final bool saving;
   final ValueChanged<String> onToggleCategory;
   final void Function(String id, _ServiceConfig cfg) onConfigChanged;
@@ -661,6 +998,7 @@ class _Step2Services extends StatelessWidget {
   const _Step2Services({
     required this.selectedIds,
     required this.serviceConfigs,
+    required this.enabledCategoryIds,
     required this.saving,
     required this.onToggleCategory,
     required this.onConfigChanged,
@@ -680,6 +1018,31 @@ class _Step2Services extends StatelessWidget {
             style: TextStyle(
                 fontSize: 14, color: AppColors.textSecondary, height: 1.5),
           ),
+          if (enabledCategoryIds.isEmpty) ...[
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.warningLight,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                    color: AppColors.warning.withValues(alpha: 0.4)),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.warning_amber_rounded,
+                      color: AppColors.warning, size: 16),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'No hay categorías habilitadas. Vuelve al paso anterior.',
+                      style: TextStyle(fontSize: 12, color: AppColors.warning),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
           const SizedBox(height: 16),
 
           // Grid de categorías
@@ -697,42 +1060,64 @@ class _Step2Services extends StatelessWidget {
               final cat = kServiceCategories[i];
               final id = cat['id']!;
               final isSelected = selectedIds.contains(id);
+              final isEnabled = enabledCategoryIds.contains(id);
               return GestureDetector(
-                onTap: () => onToggleCategory(id),
+                onTap: () {
+                  if (!isEnabled) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                            'Esta categoría no fue habilitada en el cuestionario. '
+                            'Vuelve al paso 1 para habilitarla.'),
+                        duration: Duration(seconds: 3),
+                      ),
+                    );
+                    return;
+                  }
+                  onToggleCategory(id);
+                },
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
                   decoration: BoxDecoration(
                     color: isSelected
                         ? AppColors.primaryLighter
-                        : AppColors.surfaceVariant,
+                        : isEnabled
+                            ? AppColors.surfaceVariant
+                            : AppColors.surfaceVariant
+                                .withValues(alpha: 0.5),
                     border: Border.all(
                       color: isSelected
                           ? AppColors.primary
-                          : AppColors.divider,
+                          : isEnabled
+                              ? AppColors.divider
+                              : AppColors.divider.withValues(alpha: 0.4),
                       width: isSelected ? 2 : 1,
                     ),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(cat['emoji']!,
-                          style: const TextStyle(fontSize: 24)),
-                      const SizedBox(height: 4),
-                      Text(
-                        cat['name']!,
-                        textAlign: TextAlign.center,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w600,
-                          color: isSelected
-                              ? AppColors.primary
-                              : AppColors.textPrimary,
+                  child: Opacity(
+                    opacity: isEnabled ? 1.0 : 0.4,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(cat['emoji']!,
+                            style: const TextStyle(fontSize: 24)),
+                        const SizedBox(height: 4),
+                        Text(
+                          cat['name']!,
+                          textAlign: TextAlign.center,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            color: isSelected
+                                ? AppColors.primary
+                                : AppColors.textPrimary,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               );
@@ -744,12 +1129,12 @@ class _Step2Services extends StatelessWidget {
             const SizedBox(height: 24),
             const Text(
               'Configura tus servicios',
-              style:
-                  TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 12),
             ...selectedIds.map((id) {
-              final cat = kServiceCategories.firstWhere((c) => c['id'] == id);
+              final cat =
+                  kServiceCategories.firstWhere((c) => c['id'] == id);
               final cfg = serviceConfigs[id]!;
               return _ServiceConfigCard(
                 categoryName: cat['name']!,
@@ -843,8 +1228,7 @@ class _ServiceConfigCardState extends State<_ServiceConfigCard> {
         children: [
           Row(
             children: [
-              Text(widget.emoji,
-                  style: const TextStyle(fontSize: 20)),
+              Text(widget.emoji, style: const TextStyle(fontSize: 20)),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -856,10 +1240,9 @@ class _ServiceConfigCardState extends State<_ServiceConfigCard> {
             ],
           ),
           const SizedBox(height: 12),
-
-          // Tipo de precio
           const Text('Tipo de precio',
-              style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+              style: TextStyle(
+                  fontSize: 12, color: AppColors.textSecondary)),
           const SizedBox(height: 6),
           Row(
             children: [
@@ -887,7 +1270,8 @@ class _ServiceConfigCardState extends State<_ServiceConfigCard> {
             const SizedBox(height: 10),
             TextFormField(
               controller: _priceCtrl,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
               inputFormatters: [
                 FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
               ],
@@ -897,11 +1281,10 @@ class _ServiceConfigCardState extends State<_ServiceConfigCard> {
               },
               decoration: InputDecoration(
                 labelText: 'Precio (RD\$)',
-                prefixIcon:
-                    const Icon(Icons.attach_money, color: AppColors.primary),
+                prefixIcon: const Icon(Icons.attach_money,
+                    color: AppColors.primary),
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
+                    borderRadius: BorderRadius.circular(10)),
                 isDense: true,
                 contentPadding: const EdgeInsets.symmetric(
                     horizontal: 12, vertical: 10),
@@ -922,8 +1305,7 @@ class _ServiceConfigCardState extends State<_ServiceConfigCard> {
               hintText: 'Ej: Incluye materiales, horario, condiciones...',
               hintStyle: const TextStyle(fontSize: 12),
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
+                  borderRadius: BorderRadius.circular(10)),
               isDense: true,
               contentPadding:
                   const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -951,14 +1333,12 @@ class _PriceTypeChip extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding:
-            const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
           color: selected ? AppColors.primary : Colors.transparent,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: selected ? AppColors.primary : AppColors.divider,
-          ),
+              color: selected ? AppColors.primary : AppColors.divider),
         ),
         child: Text(
           label,
@@ -1030,9 +1410,7 @@ class _Step3Verification extends StatelessWidget {
                     child: Text(
                       'Tus documentos son cifrados y solo usados para verificar tu identidad conforme a la Ley 172-13.',
                       style: TextStyle(
-                          fontSize: 12,
-                          color: AppColors.info,
-                          height: 1.4),
+                          fontSize: 12, color: AppColors.info, height: 1.4),
                     ),
                   ),
                 ],
@@ -1040,7 +1418,6 @@ class _Step3Verification extends StatelessWidget {
             ),
             const SizedBox(height: 20),
 
-            // Número de cédula
             AppTextField(
               label: 'Número de cédula dominicana',
               hint: '000-0000000-0',
@@ -1058,8 +1435,7 @@ class _Step3Verification extends StatelessWidget {
 
             const Text(
               'Fotos de identificación',
-              style:
-                  TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 4),
             const Text(
@@ -1069,7 +1445,6 @@ class _Step3Verification extends StatelessWidget {
             ),
             const SizedBox(height: 14),
 
-            // Fotos
             _DocPhotoTile(
               label: 'Foto frontal de la cédula',
               sublabel: 'Cara con tu foto y datos',
@@ -1095,14 +1470,13 @@ class _Step3Verification extends StatelessWidget {
             ),
             const SizedBox(height: 24),
 
-            // Estado
             Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
                 color: AppColors.warningLight,
                 borderRadius: BorderRadius.circular(12),
-                border:
-                    Border.all(color: AppColors.warning.withValues(alpha: 0.4)),
+                border: Border.all(
+                    color: AppColors.warning.withValues(alpha: 0.4)),
               ),
               child: const Row(
                 children: [
@@ -1116,10 +1490,9 @@ class _Step3Verification extends StatelessWidget {
                         Text(
                           'Verificación pendiente',
                           style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.warning,
-                          ),
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.warning),
                         ),
                         SizedBox(height: 2),
                         Text(
@@ -1193,12 +1566,10 @@ class _DocPhotoTile extends StatelessWidget {
               : AppColors.surfaceVariant,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: bytes != null ? AppColors.success : AppColors.divider,
-          ),
+              color: bytes != null ? AppColors.success : AppColors.divider),
         ),
         child: Row(
           children: [
-            // Preview / icon
             ClipRRect(
               borderRadius: BorderRadius.circular(8),
               child: bytes != null

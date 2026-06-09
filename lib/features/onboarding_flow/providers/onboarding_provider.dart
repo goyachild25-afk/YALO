@@ -57,6 +57,80 @@ const List<Map<String, String>> kServiceCategories = [
   {'id': 'security',         'name': 'Seguridad y vigilancia',           'emoji': '🔒'},
 ];
 
+// ─── Preguntas del cuestionario por categoría ─────────────────────────────────
+// Formato: { categoryId: [ {id, text}, ... ] }
+// Una categoría queda "habilitada" si el prestador responde "Sí" a AL MENOS UNA pregunta.
+const Map<String, List<Map<String, String>>> kCategoryQuestions = {
+  'home_cleaning': [
+    {'id': 'experiencia',  'text': '¿Tienes experiencia limpiando casas o apartamentos?'},
+    {'id': 'equipos',      'text': '¿Cuentas con tus propios equipos y productos de limpieza?'},
+  ],
+  'office_cleaning': [
+    {'id': 'experiencia',    'text': '¿Has realizado limpieza de oficinas o locales comerciales?'},
+    {'id': 'disponibilidad', 'text': '¿Tienes disponibilidad en horarios fuera de oficina?'},
+  ],
+  'pet_care': [
+    {'id': 'experiencia',  'text': '¿Tienes experiencia cuidando mascotas de terceros?'},
+    {'id': 'conocimiento', 'text': '¿Conoces primeros auxilios básicos para animales?'},
+  ],
+  'plumbing': [
+    {'id': 'experiencia',   'text': '¿Tienes experiencia en instalaciones o reparaciones de plomería?'},
+    {'id': 'herramientas',  'text': '¿Cuentas con las herramientas necesarias para trabajos de plomería?'},
+  ],
+  'electrical': [
+    {'id': 'experiencia',   'text': '¿Tienes experiencia en trabajos de instalación eléctrica?'},
+    {'id': 'conocimiento',  'text': '¿Conoces las normas de seguridad eléctrica vigentes en RD?'},
+  ],
+  'painting': [
+    {'id': 'experiencia',  'text': '¿Tienes experiencia pintando interiores o exteriores?'},
+    {'id': 'herramientas', 'text': '¿Tienes acceso a rodillos, brochas y equipos de pintura?'},
+  ],
+  'carpentry': [
+    {'id': 'experiencia',  'text': '¿Tienes experiencia en trabajos de carpintería?'},
+    {'id': 'herramientas', 'text': '¿Cuentas con herramientas de carpintería propias?'},
+  ],
+  'gardening': [
+    {'id': 'experiencia',  'text': '¿Tienes experiencia en jardinería o mantenimiento de áreas verdes?'},
+    {'id': 'herramientas', 'text': '¿Tienes herramientas de jardín (podadora, rastrillo, manguera, etc.)?'},
+  ],
+  'moving': [
+    {'id': 'experiencia', 'text': '¿Tienes experiencia realizando mudanzas o transporte de carga?'},
+    {'id': 'vehiculo',    'text': '¿Cuentas con vehículo de carga o acceso a uno?'},
+  ],
+  'pest_control': [
+    {'id': 'experiencia',  'text': '¿Tienes experiencia en fumigación o control de plagas?'},
+    {'id': 'capacitacion', 'text': '¿Tienes capacitación en el manejo seguro de productos químicos?'},
+  ],
+  'laundry': [
+    {'id': 'experiencia', 'text': '¿Tienes experiencia ofreciendo servicios de lavandería a terceros?'},
+    {'id': 'equipos',     'text': '¿Cuentas con lavadora y secadora disponibles para el servicio?'},
+  ],
+  'cooking': [
+    {'id': 'experiencia',  'text': '¿Tienes experiencia cocinando para terceros o en eventos?'},
+    {'id': 'conocimiento', 'text': '¿Conoces prácticas básicas de higiene y manipulación de alimentos?'},
+  ],
+  'babysitting': [
+    {'id': 'experiencia',  'text': '¿Tienes experiencia cuidando niños de otras familias?'},
+    {'id': 'referencias',  'text': '¿Puedes proveer referencias de familias que han confiado en ti?'},
+  ],
+  'elderly_care': [
+    {'id': 'experiencia',  'text': '¿Tienes experiencia cuidando adultos mayores?'},
+    {'id': 'capacitacion', 'text': '¿Has recibido capacitación o tienes conocimientos en asistencia gerontológica?'},
+  ],
+  'appliance_repair': [
+    {'id': 'experiencia',  'text': '¿Tienes experiencia reparando electrodomésticos?'},
+    {'id': 'herramientas', 'text': '¿Cuentas con herramientas de diagnóstico y reparación?'},
+  ],
+  'ac_service': [
+    {'id': 'experiencia',  'text': '¿Tienes experiencia instalando o dando mantenimiento a aires acondicionados?'},
+    {'id': 'conocimiento', 'text': '¿Conoces el manejo seguro de gases refrigerantes (ej. R-410A)?'},
+  ],
+  'security': [
+    {'id': 'experiencia',  'text': '¿Tienes experiencia en seguridad, vigilancia o guardianía?'},
+    {'id': 'referencias',  'text': '¿Puedes proveer referencias de empleos anteriores en seguridad?'},
+  ],
+};
+
 // ─── SharedPreferences helpers ────────────────────────────────────────────────
 const String _kOnboardingDonePrefix = 'onboarding_done_';
 const String _kVerificationSubmittedPrefix = 'verification_submitted_';
