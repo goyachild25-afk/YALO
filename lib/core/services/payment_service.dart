@@ -106,15 +106,31 @@ class PaymentService {
     }
   }
 
-  /// Calcular el monto de la plataforma (15%)
-  static double platformFee(double totalAmount) {
-    return totalAmount * AppConstants.platformCommission;
-  }
+  // ── Modelo de comisión 5% + 5% ──────────────────────────────────────────────
+  // basePrice = precio acordado entre cliente y prestador
+  // clientTotal = lo que paga el cliente: basePrice × 1.05  (+5% Garantía ServiciosYa)
+  // providerNet = lo que recibe el prestador: basePrice × 0.95  (−5% Membresía de Visibilidad)
+  // platformEarning = clientFee + providerFee = basePrice × 0.10  (10% total)
 
-  /// Calcular lo que recibe el prestador (85%)
-  static double providerAmount(double totalAmount) {
-    return totalAmount * (1 - AppConstants.platformCommission);
-  }
+  /// Monto que paga el cliente = precio base + 5% Garantía ServiciosYa
+  static double clientTotal(double basePrice) =>
+      basePrice * (1 + AppConstants.clientFee);
+
+  /// Monto neto que recibe el prestador = precio base − 5% Membresía de Visibilidad
+  static double providerAmount(double basePrice) =>
+      basePrice * (1 - AppConstants.providerFee);
+
+  /// Comisión total que recibe ServiciosYa = clientFee + providerFee
+  static double platformFee(double basePrice) =>
+      basePrice * AppConstants.clientFee + basePrice * AppConstants.providerFee;
+
+  /// Solo el componente de Garantía ServiciosYa (5% pagado por el cliente)
+  static double clientGuaranteeFee(double basePrice) =>
+      basePrice * AppConstants.clientFee;
+
+  /// Solo el componente de Membresía de Visibilidad (5% pagado por el prestador)
+  static double providerVisibilityFee(double basePrice) =>
+      basePrice * AppConstants.providerFee;
 
   /// Convertir pesos dominicanos a centavos para Stripe
   static int pesosToCentavos(double pesos) {

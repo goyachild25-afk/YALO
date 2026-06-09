@@ -33,9 +33,15 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Calcular comisión de la plataforma (15%)
-    const platformCommission = 0.15;
-    const applicationFee = Math.round(amount * platformCommission);
+    // Modelo de comisión 5% + 5%:
+    //   'amount' recibido = clientTotal = basePrice × 1.05 (ya incluye la Garantía del cliente)
+    //   basePrice = amount / 1.05
+    //   Membresía de Visibilidad del prestador = basePrice × 0.05
+    //   Garantía ServiciosYa del cliente = basePrice × 0.05
+    //   applicationFee (metadato) = ambas comisiones = basePrice × 0.10
+    const clientFeeFactor = 1.05;
+    const basePrice = amount / clientFeeFactor;
+    const applicationFee = Math.round(basePrice * 0.10); // 5% clientFee + 5% providerFee
 
     // Crear PaymentIntent en Stripe
     const paymentIntent = await stripe.paymentIntents.create({

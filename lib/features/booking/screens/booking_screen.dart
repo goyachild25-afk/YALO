@@ -540,6 +540,12 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
   }
 
   Widget _buildPriceSummary() {
+    final isFixed = _selectedService!.pricingType == PricingType.fixed;
+    final basePrice = isFixed ? (_selectedService!.fixedPrice ?? 0.0) : null;
+    // Comisión 5%+5%: el precio mostrado al cliente incluye la Garantía ServiciosYa
+    final clientTotal = basePrice != null ? basePrice * 1.05 : null;
+    final providerNet  = basePrice != null ? basePrice * 0.95 : null;
+
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -549,36 +555,111 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
       ),
       child: Column(
         children: [
+          // Servicio
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Servicio seleccionado'),
+              const Text('Servicio', style: TextStyle(fontSize: 13)),
               Text(
                 _selectedService!.categoryName,
-                style: const TextStyle(fontWeight: FontWeight.w500),
+                style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
               ),
             ],
           ),
-          const Divider(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Total estimado',
-                style: TextStyle(fontWeight: FontWeight.w600),
-              ),
-              Text(
-                _selectedService!.pricingType == PricingType.fixed
-                    ? 'RD\$${_selectedService!.fixedPrice!.toStringAsFixed(0)}'
-                    : 'Pendiente de cotización',
-                style: const TextStyle(
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.primary,
-                  fontSize: 16,
+          if (isFixed && basePrice != null) ...[
+            const Divider(height: 16),
+            // Precio base
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('Precio del servicio',
+                    style: TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+                Text('RD\$${basePrice.toStringAsFixed(0)}',
+                    style: const TextStyle(fontSize: 13)),
+              ],
+            ),
+            const SizedBox(height: 4),
+            // Garantía ServiciosYa (5%)
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    const Text('Garantía ServiciosYa',
+                        style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                    const SizedBox(width: 4),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryLighter,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Text('5%',
+                          style: TextStyle(fontSize: 10, color: AppColors.primary,
+                              fontWeight: FontWeight.w700)),
+                    ),
+                  ],
                 ),
-              ),
-            ],
-          ),
+                Text('+RD\$${(basePrice * 0.05).toStringAsFixed(0)}',
+                    style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+              ],
+            ),
+            const Divider(height: 16),
+            // Total cliente
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('Total a pagar',
+                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
+                Text(
+                  'RD\$${clientTotal!.toStringAsFixed(0)}',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.primary,
+                    fontSize: 16,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            // Nota al prestador
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('Prestador recibirá',
+                    style: TextStyle(fontSize: 11, color: AppColors.textHint)),
+                Text(
+                  'RD\$${providerNet!.toStringAsFixed(0)} (−5% Membresía)',
+                  style: const TextStyle(fontSize: 11, color: AppColors.textHint),
+                ),
+              ],
+            ),
+          ] else ...[
+            // Servicio de cotización: precio se negocia en chat
+            const Divider(height: 16),
+            const Row(
+              children: [
+                Icon(Icons.chat_bubble_outline, size: 14, color: AppColors.info),
+                SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    'El precio se negocia directamente con el prestador vía chat tras aceptar la solicitud.',
+                    style: TextStyle(fontSize: 12, color: AppColors.info, height: 1.4),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            const Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('Garantía ServiciosYa',
+                    style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                Text('5% sobre precio acordado',
+                    style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+              ],
+            ),
+          ],
         ],
       ),
     );

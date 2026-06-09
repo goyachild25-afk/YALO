@@ -1355,7 +1355,10 @@ class _RevenueCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final commission = revenue * 0.15;
+    // Comisión total = 10% del volumen base (5% clientFee + 5% providerFee)
+    final clientFeeTotal    = revenue * 0.05;
+    final providerFeeTotal  = revenue * 0.05;
+    final totalCommission   = clientFeeTotal + providerFeeTotal;
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
@@ -1382,10 +1385,37 @@ class _RevenueCard extends StatelessWidget {
             style: const TextStyle(
                 color: Colors.white, fontSize: 28, fontWeight: FontWeight.w700),
           ),
-          const SizedBox(height: 4),
-          Text(
-            'Comisión ServiciosYa (15%): RD\$${NumberFormat('#,###').format(commission.toInt())}',
-            style: const TextStyle(color: Colors.white70, fontSize: 12),
+          const SizedBox(height: 6),
+          // Desglose 5%+5%
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Garantía ServiciosYa (5% cliente): '
+                      'RD\$${NumberFormat('#,###').format(clientFeeTotal.toInt())}',
+                      style: const TextStyle(color: Colors.white70, fontSize: 11),
+                    ),
+                    Text(
+                      'Membresía Visibilidad (5% prestador): '
+                      'RD\$${NumberFormat('#,###').format(providerFeeTotal.toInt())}',
+                      style: const TextStyle(color: Colors.white70, fontSize: 11),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Total comisión ServiciosYa: '
+                      'RD\$${NumberFormat('#,###').format(totalCommission.toInt())}',
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ],
       ),
