@@ -8,6 +8,7 @@ import 'package:uuid/uuid.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/supabase_service.dart';
 import '../../../core/services/demo_provider.dart';
+import '../../../features/auth/models/user_model.dart';
 import '../../../features/auth/providers/auth_provider.dart';
 import '../../../shared/widgets/custom_button.dart';
 import '../../../shared/widgets/custom_text_field.dart';
@@ -148,7 +149,8 @@ class _ProviderOnboardingScreenState
   @override
   void initState() {
     super.initState();
-    _prefill();
+    // addPostFrameCallback asegura que el widget esté montado antes del prefill
+    WidgetsBinding.instance.addPostFrameCallback((_) => _prefill());
   }
 
   @override
@@ -164,15 +166,27 @@ class _ProviderOnboardingScreenState
   }
 
   void _prefill() {
-    ref.read(currentUserProvider).whenData((user) {
-      if (user == null) return;
-      if (_fullNameCtrl.text.isEmpty) _fullNameCtrl.text = user.fullName;
-      if (user.phone != null) _phoneCtrl.text = user.phone!;
-      if (user.city != null) _cityCtrl.text = user.city!;
-      if (user.province != null && user.province!.isNotEmpty) {
-        setState(() => _province = user.province);
-      }
-    });
+    ref.read(currentUserProvider).whenData(_applyPrefill);
+  }
+
+  /// Aplica los valores del perfil a los campos, sin sobreescribir si ya tienen texto
+  void _applyPrefill(UserModel? user) {
+    if (user == null || !mounted) return;
+    bool needsSetState = false;
+    if (_fullNameCtrl.text.isEmpty && user.fullName.isNotEmpty) {
+      _fullNameCtrl.text = user.fullName;
+    }
+    if (_phoneCtrl.text.isEmpty && user.phone != null) {
+      _phoneCtrl.text = user.phone!;
+    }
+    if (_cityCtrl.text.isEmpty && user.city != null) {
+      _cityCtrl.text = user.city!;
+    }
+    if (_province == null && user.province != null && user.province!.isNotEmpty) {
+      _province = user.province;
+      needsSetState = true;
+    }
+    if (needsSetState) setState(() {});
   }
 
   Future<(Uint8List?, String?)> _pickImage() async {
@@ -243,8 +257,10 @@ class _ProviderOnboardingScreenState
 
       final fullName = _fullNameCtrl.text.trim();
 
+      // 'email' es obligatorio (NOT NULL) — viene del usuario auth, no del formulario
       await SupabaseService.client.from('profiles').upsert({
         'id': user.id,
+        'email': user.email ?? '',
         'full_name': fullName,
         'phone': _phoneCtrl.text.trim(),
         'province': _province ?? '',
@@ -496,6 +512,11 @@ class _ProviderOnboardingScreenState
 
   @override
   Widget build(BuildContext context) {
+    // Pre-llenar campos cuando el perfil carga de forma asíncrona
+    ref.listen<AsyncValue<UserModel?>>(currentUserProvider, (_, next) {
+      next.whenData(_applyPrefill);
+    });
+
     return Scaffold(
       body: SafeArea(
         child: Column(

@@ -7,6 +7,7 @@ import 'package:supabase_flutter/supabase_flutter.dart' show FileOptions;
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/supabase_service.dart';
 import '../../../core/services/demo_provider.dart';
+import '../../../features/auth/models/user_model.dart';
 import '../../../features/auth/providers/auth_provider.dart';
 import '../../../shared/widgets/custom_button.dart';
 import '../../../shared/widgets/custom_text_field.dart';
@@ -58,7 +59,8 @@ class _ClientOnboardingScreenState
   @override
   void initState() {
     super.initState();
-    _prefill();
+    // Diferir hasta el primer frame para que currentUserProvider tenga tiempo de cargar
+    WidgetsBinding.instance.addPostFrameCallback((_) => _prefill());
   }
 
   @override
@@ -72,15 +74,27 @@ class _ClientOnboardingScreenState
   }
 
   void _prefill() {
-    ref.read(currentUserProvider).whenData((user) {
-      if (user == null) return;
-      if (user.phone != null) _phoneCtrl.text = user.phone!;
-      if (user.city != null) _cityCtrl.text = user.city!;
-      if (user.address != null) _addressCtrl.text = user.address!;
-      if (user.province != null && user.province!.isNotEmpty) {
-        setState(() => _province = user.province);
-      }
-    });
+    ref.read(currentUserProvider).whenData(_applyPrefill);
+  }
+
+  void _applyPrefill(UserModel? user) {
+    if (user == null || !mounted) return;
+    bool needsSetState = false;
+    // Solo rellenar si el campo está vacío (no pisar lo que el usuario ya escribió)
+    if (_phoneCtrl.text.isEmpty && user.phone != null) {
+      _phoneCtrl.text = user.phone!;
+    }
+    if (_cityCtrl.text.isEmpty && user.city != null) {
+      _cityCtrl.text = user.city!;
+    }
+    if (_addressCtrl.text.isEmpty && user.address != null) {
+      _addressCtrl.text = user.address!;
+    }
+    if (_province == null && user.province != null && user.province!.isNotEmpty) {
+      _province = user.province;
+      needsSetState = true;
+    }
+    if (needsSetState) setState(() {});
   }
 
   Future<(Uint8List?, String?)> _pickImage() async {
@@ -151,6 +165,7 @@ class _ClientOnboardingScreenState
 
       await SupabaseService.client.from('profiles').upsert({
         'id': user.id,
+        'email': user.email ?? '',   // CRÍTICO: profiles.email NOT NULL — viene del auth, no del form
         'phone': _phoneCtrl.text.trim(),
         'province': _province ?? '',
         'city': _cityCtrl.text.trim(),
@@ -245,6 +260,10 @@ class _ClientOnboardingScreenState
 
   @override
   Widget build(BuildContext context) {
+    // Rellenar campos cuando currentUserProvider carga (puede llegar después del primer frame)
+    ref.listen<AsyncValue<UserModel?>>(currentUserProvider, (_, next) {
+      next.whenData(_applyPrefill);
+    });
     return Scaffold(
       body: SafeArea(
         child: Column(
