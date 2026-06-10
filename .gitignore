@@ -46,3 +46,17 @@ app.*.map.json
 
 # Local Netlify folder
 .netlify
+
+# Node.js
+node_modules/
+package-lock.json
+
+# Scripts temporales
+serve.js
+gen_icons.js
+
+# Archives
+*.zip
+
+# Supabase local
+supabase/.temp/

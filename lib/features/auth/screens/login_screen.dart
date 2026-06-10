@@ -11,10 +11,8 @@ import '../../../shared/widgets/custom_button.dart';
 import '../../../shared/widgets/custom_text_field.dart';
 
 /// Controla si los botones de Modo Demo son visibles.
-/// En producción: false (valor por defecto).
-/// Para la demo de inversores: flutter build web --dart-define=SHOW_DEMO=true
-const bool kShowDemoButtons =
-    bool.fromEnvironment('SHOW_DEMO', defaultValue: false);
+/// En producción: false. Para pruebas y demos: true.
+const bool kShowDemoButtons = true;
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});

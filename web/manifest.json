@@ -3,9 +3,9 @@
     "short_name": "ServiciosYa",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#134E4A",
-    "theme_color": "#0D9488",
-    "description": "Tu hogar en las mejores manos. Servicios verificados en Costa Rica.",
+    "background_color": "#0077B6",
+    "theme_color": "#0077B6",
+    "description": "Profesionales verificados para tu hogar en República Dominicana.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

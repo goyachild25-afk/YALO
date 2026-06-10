@@ -109,7 +109,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
             // ── Controles ─────────────────────────────────────────────────────
             Padding(
-              padding: const EdgeInsets.fromLTRB(24, 8, 24, 28),
+              padding: const EdgeInsets.fromLTRB(24, 4, 24, 12),
               child: Column(
                 children: [
                   // Indicador de página
@@ -184,6 +184,9 @@ class _Page1 extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final h = MediaQuery.of(context).size.height;
+    final lottieSz = h < 700 ? 150.0 : 190.0;
+    final gap1 = h < 700 ? 16.0 : 28.0;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 28),
       child: Column(
@@ -191,12 +194,12 @@ class _Page1 extends StatelessWidget {
         children: [
           Lottie.asset(
             'assets/animations/home_service.json',
-            width: 200,
-            height: 200,
+            width: lottieSz,
+            height: lottieSz,
             fit: BoxFit.contain,
             repeat: true,
           ),
-          const SizedBox(height: 34),
+          SizedBox(height: gap1),
 
           // Badge — país
           Container(
@@ -257,6 +260,9 @@ class _Page2 extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final h = MediaQuery.of(context).size.height;
+    final lottieSz = h < 700 ? 150.0 : 190.0;
+    final gap1 = h < 700 ? 16.0 : 28.0;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 28),
       child: Column(
@@ -264,12 +270,12 @@ class _Page2 extends StatelessWidget {
         children: [
           Lottie.asset(
             'assets/animations/team_verified.json',
-            width: 200,
-            height: 200,
+            width: lottieSz,
+            height: lottieSz,
             fit: BoxFit.contain,
             repeat: true,
           ),
-          const SizedBox(height: 34),
+          SizedBox(height: gap1),
 
           const Text(
             'Prestadores reales,\ncalificados',
