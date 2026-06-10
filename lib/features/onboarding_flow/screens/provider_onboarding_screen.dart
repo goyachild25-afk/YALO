@@ -7,6 +7,7 @@ import 'package:supabase_flutter/supabase_flutter.dart' show FileOptions;
 import 'package:uuid/uuid.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/supabase_service.dart';
+import '../../../core/services/demo_provider.dart';
 import '../../../features/auth/providers/auth_provider.dart';
 import '../../../shared/widgets/custom_button.dart';
 import '../../../shared/widgets/custom_text_field.dart';
@@ -152,6 +153,13 @@ class _ProviderOnboardingScreenState
   // ── Guardar paso 1 — Perfil personal ─────────────────────────────────────────
   Future<void> _saveStep1() async {
     if (!_formKey1.currentState!.validate()) return;
+
+    // En modo demo no se toca la base de datos real
+    if (ref.read(demoModeProvider)) {
+      _goToStep(2);
+      return;
+    }
+
     setState(() => _saving = true);
 
     try {
@@ -236,6 +244,13 @@ class _ProviderOnboardingScreenState
         }
       }
     }
+
+    // En modo demo no se toca la base de datos real
+    if (ref.read(demoModeProvider)) {
+      _goToStep(3);
+      return;
+    }
+
     setState(() => _saving = true);
 
     try {
@@ -297,6 +312,13 @@ class _ProviderOnboardingScreenState
       _showError('Sube las 3 fotos requeridas (frontal, trasera y selfie)');
       return;
     }
+
+    // En modo demo: omitir subida de documentos y marcar onboarding completo localmente
+    if (ref.read(demoModeProvider)) {
+      if (mounted) context.go('/dashboard');
+      return;
+    }
+
     setState(() => _saving = true);
 
     try {

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/supabase_service.dart';
+import '../../../core/services/demo_provider.dart';
 import '../../../features/auth/providers/auth_provider.dart';
 import '../../../shared/widgets/custom_button.dart';
 import '../../../shared/widgets/custom_text_field.dart';
@@ -57,6 +58,13 @@ class _ClientOnboardingScreenState
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
+
+    // En modo demo no se toca la base de datos real
+    if (ref.read(demoModeProvider)) {
+      if (mounted) context.go('/home');
+      return;
+    }
+
     setState(() => _saving = true);
 
     try {
@@ -224,8 +232,11 @@ class _ClientOnboardingScreenState
                       Center(
                         child: TextButton(
                           onPressed: () async {
-                            final user = SupabaseService.currentUser;
-                            if (user != null) await markOnboardingComplete(user.id);
+                            // En modo demo no hay usuario real en Supabase
+                            if (!ref.read(demoModeProvider)) {
+                              final user = SupabaseService.currentUser;
+                              if (user != null) await markOnboardingComplete(user.id);
+                            }
                             if (!mounted) return;
                             context.go('/home'); // ignore: use_build_context_synchronously
                           },
