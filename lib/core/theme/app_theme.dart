@@ -3,6 +3,11 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../constants/app_colors.dart';
 
+/// Tema "Brisa Caribeña" — ServiciosYa
+///
+/// Tipografía dual:
+///   Playfair Display → títulos hero y display  (elegancia, lujo tropical)
+///   Nunito           → cuerpo, labels, botones  (calidez, cercanía)
 class AppTheme {
   AppTheme._();
 
@@ -14,11 +19,15 @@ class AppTheme {
         onPrimary: AppColors.textOnPrimary,
         secondary: AppColors.secondary,
         onSecondary: AppColors.textOnPrimary,
+        tertiary: AppColors.accent,
+        onTertiary: AppColors.textOnPrimary,
         surface: AppColors.surface,
         onSurface: AppColors.textPrimary,
         error: AppColors.error,
         onError: AppColors.textOnPrimary,
         surfaceContainerHighest: AppColors.surfaceVariant,
+        outline: AppColors.border,
+        outlineVariant: AppColors.divider,
       ),
       scaffoldBackgroundColor: AppColors.background,
 
@@ -27,63 +36,80 @@ class AppTheme {
         backgroundColor: AppColors.surface,
         foregroundColor: AppColors.textPrimary,
         elevation: 0,
-        scrolledUnderElevation: 0.5,
+        scrolledUnderElevation: 1,
         shadowColor: AppColors.shadow,
+        surfaceTintColor: Colors.transparent,
         systemOverlayStyle: SystemUiOverlayStyle.dark,
-        titleTextStyle: GoogleFonts.poppins(
-          fontSize: 17,
-          fontWeight: FontWeight.w600,
+        titleTextStyle: GoogleFonts.nunito(
+          fontSize: 18,
+          fontWeight: FontWeight.w700,
           color: AppColors.textPrimary,
           letterSpacing: -0.2,
         ),
-        iconTheme: const IconThemeData(color: AppColors.textPrimary),
+        iconTheme: const IconThemeData(color: AppColors.textPrimary, size: 22),
       ),
 
       // ── Tipografía ───────────────────────────────────────────────────────────
-      textTheme: GoogleFonts.poppinsTextTheme().copyWith(
-        displayLarge: GoogleFonts.poppins(
+      textTheme: TextTheme(
+        // Display — Playfair elegante (hero, splash, pantallas principales)
+        displayLarge: GoogleFonts.playfairDisplay(
+          fontSize: 40, fontWeight: FontWeight.w700,
+          color: AppColors.textPrimary, letterSpacing: -0.5, height: 1.1,
+        ),
+        displayMedium: GoogleFonts.playfairDisplay(
           fontSize: 32, fontWeight: FontWeight.w700,
-          color: AppColors.textPrimary, letterSpacing: -0.5,
+          color: AppColors.textPrimary, letterSpacing: -0.5, height: 1.15,
         ),
-        displayMedium: GoogleFonts.poppins(
-          fontSize: 28, fontWeight: FontWeight.w700,
-          color: AppColors.textPrimary, letterSpacing: -0.5,
+        headlineLarge: GoogleFonts.playfairDisplay(
+          fontSize: 26, fontWeight: FontWeight.w700,
+          color: AppColors.textPrimary, letterSpacing: -0.3, height: 1.2,
         ),
-        headlineLarge: GoogleFonts.poppins(
-          fontSize: 24, fontWeight: FontWeight.w700,
-          color: AppColors.textPrimary, letterSpacing: -0.3,
+        headlineMedium: GoogleFonts.playfairDisplay(
+          fontSize: 22, fontWeight: FontWeight.w600,
+          color: AppColors.textPrimary, height: 1.25,
         ),
-        headlineMedium: GoogleFonts.poppins(
-          fontSize: 20, fontWeight: FontWeight.w600,
+        headlineSmall: GoogleFonts.playfairDisplay(
+          fontSize: 19, fontWeight: FontWeight.w600,
+          color: AppColors.textPrimary, height: 1.3,
+        ),
+        // Titles — Nunito cálido (cards, labels de UI)
+        titleLarge: GoogleFonts.nunito(
+          fontSize: 17, fontWeight: FontWeight.w700,
+          color: AppColors.textPrimary, letterSpacing: -0.1,
+        ),
+        titleMedium: GoogleFonts.nunito(
+          fontSize: 15, fontWeight: FontWeight.w600,
           color: AppColors.textPrimary,
         ),
-        headlineSmall: GoogleFonts.poppins(
-          fontSize: 18, fontWeight: FontWeight.w600,
-          color: AppColors.textPrimary,
+        titleSmall: GoogleFonts.nunito(
+          fontSize: 13, fontWeight: FontWeight.w600,
+          color: AppColors.textSecondary,
         ),
-        titleLarge: GoogleFonts.poppins(
-          fontSize: 16, fontWeight: FontWeight.w600,
-          color: AppColors.textPrimary,
+        // Body — Nunito amigable y legible
+        bodyLarge: GoogleFonts.nunito(
+          fontSize: 16, fontWeight: FontWeight.w500,
+          color: AppColors.textPrimary, height: 1.55,
         ),
-        titleMedium: GoogleFonts.poppins(
-          fontSize: 14, fontWeight: FontWeight.w500,
-          color: AppColors.textPrimary,
-        ),
-        bodyLarge: GoogleFonts.poppins(
-          fontSize: 16, fontWeight: FontWeight.w400,
-          color: AppColors.textPrimary,
-        ),
-        bodyMedium: GoogleFonts.poppins(
+        bodyMedium: GoogleFonts.nunito(
           fontSize: 14, fontWeight: FontWeight.w400,
-          color: AppColors.textSecondary,
+          color: AppColors.textSecondary, height: 1.55,
         ),
-        bodySmall: GoogleFonts.poppins(
+        bodySmall: GoogleFonts.nunito(
           fontSize: 12, fontWeight: FontWeight.w400,
+          color: AppColors.textSecondary, height: 1.4,
+        ),
+        // Labels — Nunito semibold
+        labelLarge: GoogleFonts.nunito(
+          fontSize: 15, fontWeight: FontWeight.w700,
+          color: AppColors.textOnPrimary, letterSpacing: 0.2,
+        ),
+        labelMedium: GoogleFonts.nunito(
+          fontSize: 12, fontWeight: FontWeight.w600,
           color: AppColors.textSecondary,
         ),
-        labelLarge: GoogleFonts.poppins(
-          fontSize: 14, fontWeight: FontWeight.w600,
-          color: AppColors.textOnPrimary,
+        labelSmall: GoogleFonts.nunito(
+          fontSize: 11, fontWeight: FontWeight.w600,
+          color: AppColors.textHint, letterSpacing: 0.3,
         ),
       ),
 
@@ -93,12 +119,13 @@ class AppTheme {
           backgroundColor: AppColors.primary,
           foregroundColor: AppColors.textOnPrimary,
           elevation: 0,
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          shadowColor: Colors.transparent,
+          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(18),
           ),
-          textStyle: GoogleFonts.poppins(
-            fontSize: 15, fontWeight: FontWeight.w600, letterSpacing: 0.1,
+          textStyle: GoogleFonts.nunito(
+            fontSize: 16, fontWeight: FontWeight.w700, letterSpacing: 0.1,
           ),
         ),
       ),
@@ -108,12 +135,12 @@ class AppTheme {
         style: OutlinedButton.styleFrom(
           foregroundColor: AppColors.primary,
           side: const BorderSide(color: AppColors.primary, width: 1.5),
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 15),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(18),
           ),
-          textStyle: GoogleFonts.poppins(
-            fontSize: 15, fontWeight: FontWeight.w600,
+          textStyle: GoogleFonts.nunito(
+            fontSize: 15, fontWeight: FontWeight.w700,
           ),
         ),
       ),
@@ -122,8 +149,8 @@ class AppTheme {
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
           foregroundColor: AppColors.primary,
-          textStyle: GoogleFonts.poppins(
-            fontSize: 14, fontWeight: FontWeight.w600,
+          textStyle: GoogleFonts.nunito(
+            fontSize: 14, fontWeight: FontWeight.w700,
           ),
         ),
       ),
@@ -133,32 +160,35 @@ class AppTheme {
         filled: true,
         fillColor: AppColors.surface,
         contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(14),
           borderSide: const BorderSide(color: AppColors.border),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(14),
           borderSide: const BorderSide(color: AppColors.border, width: 1),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: AppColors.primary, width: 2),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(14),
           borderSide: const BorderSide(color: AppColors.error, width: 1),
         ),
         focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.error, width: 1.5),
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: AppColors.error, width: 2),
         ),
-        hintStyle: GoogleFonts.poppins(
-            color: AppColors.textHint, fontSize: 14),
-        labelStyle: GoogleFonts.poppins(
-            color: AppColors.textSecondary, fontSize: 14),
+        hintStyle: GoogleFonts.nunito(color: AppColors.textHint, fontSize: 14),
+        labelStyle:
+            GoogleFonts.nunito(color: AppColors.textSecondary, fontSize: 14),
         prefixIconColor: AppColors.textHint,
+        suffixIconColor: AppColors.textHint,
+        floatingLabelStyle:
+            GoogleFonts.nunito(color: AppColors.primary, fontSize: 13,
+                fontWeight: FontWeight.w600),
       ),
 
       // ── Cards ────────────────────────────────────────────────────────────────
@@ -166,7 +196,7 @@ class AppTheme {
         color: AppColors.surface,
         elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(20),
           side: const BorderSide(color: AppColors.divider, width: 1),
         ),
         margin: EdgeInsets.zero,
@@ -177,11 +207,11 @@ class AppTheme {
       chipTheme: ChipThemeData(
         backgroundColor: AppColors.surfaceVariant,
         selectedColor: AppColors.primaryLighter,
-        labelStyle: GoogleFonts.poppins(
-            fontSize: 12, fontWeight: FontWeight.w500),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        labelStyle:
+            GoogleFonts.nunito(fontSize: 12, fontWeight: FontWeight.w600),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
         shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20)),
+            borderRadius: BorderRadius.circular(22)),
         side: const BorderSide(color: AppColors.border),
       ),
 
@@ -190,11 +220,11 @@ class AppTheme {
         backgroundColor: AppColors.surface,
         selectedItemColor: AppColors.primary,
         unselectedItemColor: AppColors.textHint,
-        selectedLabelStyle: GoogleFonts.poppins(
-            fontSize: 11, fontWeight: FontWeight.w600),
-        unselectedLabelStyle: GoogleFonts.poppins(fontSize: 11),
+        selectedLabelStyle:
+            GoogleFonts.nunito(fontSize: 11, fontWeight: FontWeight.w700),
+        unselectedLabelStyle: GoogleFonts.nunito(fontSize: 11),
         type: BottomNavigationBarType.fixed,
-        elevation: 12,
+        elevation: 16,
         showUnselectedLabels: true,
       ),
 
@@ -208,13 +238,15 @@ class AppTheme {
       // ── SnackBar ─────────────────────────────────────────────────────────────
       snackBarTheme: SnackBarThemeData(
         backgroundColor: AppColors.textPrimary,
-        contentTextStyle: GoogleFonts.poppins(
-            color: Colors.white, fontSize: 13),
+        contentTextStyle:
+            GoogleFonts.nunito(color: Colors.white, fontSize: 13,
+                fontWeight: FontWeight.w500),
         shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12)),
+            borderRadius: BorderRadius.circular(14)),
         behavior: SnackBarBehavior.floating,
         insetPadding:
             const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        elevation: 8,
       ),
 
       // ── CheckBox ─────────────────────────────────────────────────────────────
@@ -223,37 +255,100 @@ class AppTheme {
           if (states.contains(WidgetState.selected)) return AppColors.primary;
           return null;
         }),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
+        side: const BorderSide(color: AppColors.border, width: 1.5),
       ),
 
       // ── Switch ───────────────────────────────────────────────────────────────
       switchTheme: SwitchThemeData(
         thumbColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) return AppColors.primary;
-          return null;
+          return AppColors.textHint;
         }),
         trackColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
             return AppColors.primaryLighter;
           }
-          return null;
+          return AppColors.divider;
         }),
       ),
 
       // ── Dialog ───────────────────────────────────────────────────────────────
       dialogTheme: DialogThemeData(
         shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20)),
+            borderRadius: BorderRadius.circular(24)),
         backgroundColor: AppColors.surface,
-        titleTextStyle: GoogleFonts.poppins(
-          fontSize: 17,
+        elevation: 24,
+        shadowColor: AppColors.shadow,
+        titleTextStyle: GoogleFonts.playfairDisplay(
+          fontSize: 20,
           fontWeight: FontWeight.w700,
           color: AppColors.textPrimary,
         ),
-        contentTextStyle: GoogleFonts.poppins(
+        contentTextStyle: GoogleFonts.nunito(
           fontSize: 14,
           color: AppColors.textSecondary,
+          height: 1.5,
         ),
+      ),
+
+      // ── Bottom Sheet ─────────────────────────────────────────────────────────
+      bottomSheetTheme: const BottomSheetThemeData(
+        backgroundColor: AppColors.surface,
+        modalBackgroundColor: AppColors.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        elevation: 16,
+        modalElevation: 24,
+        showDragHandle: true,
+        dragHandleColor: AppColors.divider,
+        dragHandleSize: Size(44, 4),
+      ),
+
+      // ── FAB ──────────────────────────────────────────────────────────────────
+      floatingActionButtonTheme: FloatingActionButtonThemeData(
+        backgroundColor: AppColors.primary,
+        foregroundColor: AppColors.textOnPrimary,
+        elevation: 6,
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20)),
+        extendedTextStyle:
+            GoogleFonts.nunito(fontSize: 14, fontWeight: FontWeight.w700),
+      ),
+
+      // ── Tab bar ──────────────────────────────────────────────────────────────
+      tabBarTheme: TabBarThemeData(
+        labelColor: AppColors.primary,
+        unselectedLabelColor: AppColors.textHint,
+        indicatorColor: AppColors.primary,
+        indicatorSize: TabBarIndicatorSize.tab,
+        labelStyle:
+            GoogleFonts.nunito(fontSize: 13, fontWeight: FontWeight.w700),
+        unselectedLabelStyle:
+            GoogleFonts.nunito(fontSize: 13, fontWeight: FontWeight.w500),
+        dividerColor: AppColors.divider,
+      ),
+
+      // ── List tile ────────────────────────────────────────────────────────────
+      listTileTheme: ListTileThemeData(
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+        titleTextStyle: GoogleFonts.nunito(
+            fontSize: 15, fontWeight: FontWeight.w600,
+            color: AppColors.textPrimary),
+        subtitleTextStyle:
+            GoogleFonts.nunito(fontSize: 13, color: AppColors.textSecondary),
+        iconColor: AppColors.textSecondary,
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14)),
+      ),
+
+      // ── Progress indicator ────────────────────────────────────────────────────
+      progressIndicatorTheme: const ProgressIndicatorThemeData(
+        color: AppColors.primary,
+        linearTrackColor: AppColors.primaryLighter,
+        circularTrackColor: AppColors.primaryLighter,
       ),
     );
   }

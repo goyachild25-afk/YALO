@@ -13,7 +13,7 @@ import '../../../shared/widgets/custom_button.dart';
 
 // Colores de acento por página
 const _kColorPage1 = AppColors.primary;
-const _kColorPage2 = Color(0xFF16A34A); // Verde verificado
+const _kColorPage2 = AppColors.success; // Verde verificado
 const _kColorPage3 = AppColors.accent;  // Naranja pago
 
 class OnboardingScreen extends StatefulWidget {

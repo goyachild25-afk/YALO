@@ -60,7 +60,7 @@ class HomeScreen extends ConsumerWidget {
             collapsedHeight: 70,
             floating: false,
             pinned: true,
-            backgroundColor: const Color(0xFF134E4A),
+            backgroundColor: AppColors.primaryDark,
             elevation: 0,
             automaticallyImplyLeading: false,
             flexibleSpace: FlexibleSpaceBar(
@@ -471,7 +471,7 @@ class _PromoBanner extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFFEA580C).withValues(alpha: 0.3),
+            color: AppColors.accent.withValues(alpha: 0.3),
             blurRadius: 24,
             offset: const Offset(0, 8),
           ),
@@ -566,14 +566,14 @@ class _PromoBanner extends StatelessWidget {
                               Text(
                                 'Ver profesionales',
                                 style: TextStyle(
-                                  color: Color(0xFFEA580C),
+                                  color: AppColors.accent,
                                   fontSize: 12,
                                   fontWeight: FontWeight.w700,
                                 ),
                               ),
                               SizedBox(width: 4),
                               Icon(Icons.arrow_forward_rounded,
-                                  size: 14, color: Color(0xFFEA580C)),
+                                  size: 14, color: AppColors.accent),
                             ],
                           ),
                         ),
@@ -643,7 +643,7 @@ class _TrustSection extends StatelessWidget {
                 title: 'Calificados',
                 subtitle: 'Reseñas reales de clientes',
                 color: AppColors.star,
-                bg: const Color(0xFFFFFBEB),
+                bg: AppColors.goldLight,
               ),
             ),
             const SizedBox(width: 10),
@@ -663,11 +663,7 @@ class _TrustSection extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [Color(0xFF0D9488), Color(0xFF0891B2)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
+            gradient: AppColors.tropicalGradient,
             borderRadius: BorderRadius.circular(14),
           ),
           child: const Row(

@@ -285,15 +285,15 @@ class _FilterSummaryBanner extends StatelessWidget {
       margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: const Color(0xFFCCFBF1), // primaryLighter
+        color: AppColors.successLight,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFF0D9488), width: 1),
+        border: Border.all(color: AppColors.success, width: 1),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Icon(Icons.tune_rounded,
-              size: 18, color: Color(0xFF0F766E)),
+              size: 18, color: AppColors.success),
           const SizedBox(width: 8),
           Expanded(
             child: Column(
@@ -304,7 +304,7 @@ class _FilterSummaryBanner extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
-                    color: Color(0xFF0F766E),
+                    color: AppColors.success,
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -312,7 +312,7 @@ class _FilterSummaryBanner extends StatelessWidget {
                   notes,
                   style: const TextStyle(
                     fontSize: 11,
-                    color: Color(0xFF134E4A),
+                    color: AppColors.textSecondary,
                     height: 1.4,
                   ),
                   maxLines: 3,
@@ -502,7 +502,7 @@ class _MapPlaceholder extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: const Color(0xFFE8F4F8),
+      color: AppColors.surfaceVariant,
       child: Center(
         child: Padding(
           padding: const EdgeInsets.all(32),

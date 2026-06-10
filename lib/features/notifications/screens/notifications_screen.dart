@@ -186,7 +186,7 @@ class _NotificationTile extends ConsumerWidget {
       case NotificationType.newBookingRequest:
         return AppColors.warning;
       case NotificationType.newReview:
-        return const Color(0xFFCA8A04);
+        return AppColors.goldDark;
     }
   }
 }

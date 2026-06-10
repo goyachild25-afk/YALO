@@ -320,7 +320,7 @@ class _DemoSection extends ConsumerWidget {
               child: _DemoButton(
                 label: 'Ver como\nPrestador',
                 icon: Icons.work,
-                color: const Color(0xFF7C3AED),
+                color: AppColors.secondary,
                 onTap: () {
                   enterDemoAsProvider(ref);
                   context.go('/dashboard');

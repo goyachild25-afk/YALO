@@ -1,73 +1,132 @@
 import 'package:flutter/material.dart';
 
+/// Sistema de color "Brisa Caribeña" — ServiciosYa
+///
+/// Inspirado en la naturaleza de República Dominicana:
+///   primary   → azul profundo del Caribe   (confianza, seguridad, océano)
+///   accent    → coral del atardecer        (calidez, acogida, energía)
+///   gold      → dorado solar               (calidad, excelencia, sol)
+///   success   → verde palmera              (completado, naturaleza)
+///   background → mañana caribeña           (limpieza, amplitud)
 class AppColors {
   AppColors._();
 
-  // ── Primary — Teal profundo (limpieza + confianza) ──────────────────────────
-  static const Color primary = Color(0xFF0D9488);        // Teal 600
-  static const Color primaryDark = Color(0xFF0F766E);   // Teal 700
-  static const Color primaryLight = Color(0xFF2DD4BF);  // Teal 400
-  static const Color primaryLighter = Color(0xFFCCFBF1);// Teal 100
+  // ── Primary — Azul Caribeño Profundo ─────────────────────────────────────────
+  static const Color primary       = Color(0xFF0077B6); // Caribe vibrante
+  static const Color primaryDark   = Color(0xFF023E8A); // Océano nocturno
+  static const Color primaryLight  = Color(0xFF48CAE4); // Cielo caribeño
+  static const Color primaryLighter = Color(0xFFE0F4FF); // Brisa matutina
 
-  // ── Accent — Ámbar cálido (hogar + calidez) ─────────────────────────────────
-  static const Color accent = Color(0xFFF97316);         // Orange 500
-  static const Color accentDark = Color(0xFFEA580C);    // Orange 600
-  static const Color accentLight = Color(0xFFFED7AA);   // Orange 200
+  // ── Accent — Coral del Atardecer ─────────────────────────────────────────────
+  static const Color accent      = Color(0xFFFF6B47); // Coral tropical
+  static const Color accentDark  = Color(0xFFE04F2D); // Coral profundo
+  static const Color accentLight = Color(0xFFFFE2D8); // Rosa coral suave
 
-  // ── Secondary ────────────────────────────────────────────────────────────────
-  static const Color secondary = Color(0xFF0891B2);     // Cyan 600
+  // ── Gold — Dorado Solar ───────────────────────────────────────────────────────
+  static const Color gold      = Color(0xFFFFAA00); // Sol caribeño
+  static const Color goldDark  = Color(0xFFE08C00); // Ámbar dorado
+  static const Color goldLight = Color(0xFFFFF3CC); // Luz solar suave
 
-  // ── Fondos ──────────────────────────────────────────────────────────────────
-  static const Color background = Color(0xFFF4F7F6);    // Blanco cálido verdoso
-  static const Color surface = Color(0xFFFFFFFF);
-  static const Color surfaceVariant = Color(0xFFEEFAF8); // Teal-50 cálido
+  // ── Secondary — Turquesa ─────────────────────────────────────────────────────
+  static const Color secondary = Color(0xFF00B4D8); // Turquesa caribeño
 
-  // ── Texto ────────────────────────────────────────────────────────────────────
-  static const Color textPrimary = Color(0xFF1A2B2A);   // Navy oscuro cálido
-  static const Color textSecondary = Color(0xFF64748B);
-  static const Color textHint = Color(0xFF94A3B8);
-  static const Color textOnPrimary = Color(0xFFFFFFFF);
+  // ── Fondos ───────────────────────────────────────────────────────────────────
+  static const Color background      = Color(0xFFF0F7FF); // Cielo tropical
+  static const Color surface         = Color(0xFFFFFFFF); // Blanco perla
+  static const Color surfaceVariant  = Color(0xFFE8F4FD); // Agua turquesa suave
+  static const Color surfaceTint     = Color(0xFFF5FAFE); // Brisa oceánica
 
-  // ── Semánticos ───────────────────────────────────────────────────────────────
-  static const Color success = Color(0xFF10B981);
-  static const Color successLight = Color(0xFFD1FAE5);
-  static const Color warning = Color(0xFFF59E0B);
-  static const Color warningLight = Color(0xFFFEF3C7);
-  static const Color error = Color(0xFFEF4444);
-  static const Color errorLight = Color(0xFFFEE2E2);
-  static const Color info = Color(0xFF3B82F6);
-  static const Color infoLight = Color(0xFFDBEAFE);
+  // ── Texto ─────────────────────────────────────────────────────────────────────
+  static const Color textPrimary   = Color(0xFF03213B); // Noche caribeña
+  static const Color textSecondary = Color(0xFF4A6B7C); // Azul marino suave
+  static const Color textHint      = Color(0xFF8AABB8); // Neblina marina
+  static const Color textOnPrimary = Color(0xFFFFFFFF); // Blanco puro
 
-  // ── UI ───────────────────────────────────────────────────────────────────────
-  static const Color divider = Color(0xFFE2E8F0);
-  static const Color border = Color(0xFFCBD5E1);
-  static const Color shadow = Color(0x18000000);
-  static const Color star = Color(0xFFFBBF24);
+  // ── Semánticos ────────────────────────────────────────────────────────────────
+  static const Color success      = Color(0xFF06A87F); // Verde palmera
+  static const Color successLight = Color(0xFFCCF2E8); // Verde tropical suave
+  static const Color warning      = Color(0xFFFFAA00); // Dorado solar (= gold)
+  static const Color warningLight = Color(0xFFFFF3CC); // Luz dorada
+  static const Color error        = Color(0xFFEA4C6A); // Rojo tropical
+  static const Color errorLight   = Color(0xFFFFE0E8); // Rosa error
+  static const Color info         = Color(0xFF48CAE4); // Azul turquesa (= primaryLight)
+  static const Color infoLight    = Color(0xFFDEF5FB); // Turquesa suave
 
-  // ── Gradientes ───────────────────────────────────────────────────────────────
+  // ── UI ────────────────────────────────────────────────────────────────────────
+  static const Color divider = Color(0xFFD0E8F5); // Azul muy suave
+  static const Color border  = Color(0xFFB0D2E8); // Borde océano suave
+  static const Color shadow  = Color(0x220077B6); // Sombra azul caribeña
+  static const Color star    = Color(0xFFFFAA00); // Estrella dorada (= gold)
 
-  /// Gradiente principal (botones, cards destacadas)
-  static const LinearGradient primaryGradient = LinearGradient(
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-    colors: [Color(0xFF0D9488), Color(0xFF0F766E)],
-  );
+  // ── Gradientes ────────────────────────────────────────────────────────────────
 
-  /// Hero del header (oscuro → teal → cyan)
+  /// Hero principal: del océano profundo al cielo caribeño
   static const LinearGradient heroGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    stops: [0.0, 0.55, 1.0],
-    colors: [Color(0xFF134E4A), Color(0xFF0D9488), Color(0xFF0891B2)],
+    stops: [0.0, 0.50, 1.0],
+    colors: [
+      Color(0xFF023E8A), // Océano nocturno
+      Color(0xFF0077B6), // Azul caribeño
+      Color(0xFF48CAE4), // Cielo tropical
+    ],
   );
 
-  /// Gradiente cálido (promo banners, accent)
+  /// Botones primarios: azul vivo → turquesa brillante
+  static const LinearGradient primaryGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [Color(0xFF0077B6), Color(0xFF00B4D8)],
+  );
+
+  /// Acento cálido: coral del atardecer → dorado solar
   static const LinearGradient warmGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [Color(0xFFEA580C), Color(0xFFF59E0B)],
+    colors: [Color(0xFFFF6B47), Color(0xFFFFAA00)],
   );
 
-  /// Alias para compatibilidad con screens que usan headerGradient
+  /// Tropical: océano → verde palmera
+  static const LinearGradient tropicalGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [Color(0xFF0077B6), Color(0xFF06A87F)],
+  );
+
+  /// Alias usado en SliverAppBar collapsed y headers
   static const LinearGradient headerGradient = heroGradient;
+
+  // ── Sombras con color ─────────────────────────────────────────────────────────
+
+  /// Sombra suave para cards
+  static List<BoxShadow> get cardShadow => [
+        BoxShadow(
+          color: const Color(0xFF0077B6).withValues(alpha: 0.09),
+          blurRadius: 22,
+          offset: const Offset(0, 6),
+        ),
+        BoxShadow(
+          color: const Color(0xFF000000).withValues(alpha: 0.04),
+          blurRadius: 4,
+          offset: const Offset(0, 2),
+        ),
+      ];
+
+  /// Sombra intensa para botones primarios
+  static List<BoxShadow> get buttonShadow => [
+        BoxShadow(
+          color: const Color(0xFF0077B6).withValues(alpha: 0.42),
+          blurRadius: 20,
+          offset: const Offset(0, 7),
+        ),
+      ];
+
+  /// Sombra coral para botones / badges de acento
+  static List<BoxShadow> get accentShadow => [
+        BoxShadow(
+          color: const Color(0xFFFF6B47).withValues(alpha: 0.40),
+          blurRadius: 18,
+          offset: const Offset(0, 6),
+        ),
+      ];
 }
