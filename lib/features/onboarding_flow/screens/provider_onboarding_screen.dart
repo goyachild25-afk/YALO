@@ -71,6 +71,7 @@ class _ProviderOnboardingScreenState
   static const _withTools = {
     'plumbing', 'electrical', 'painting', 'carpentry',
     'pest_control', 'ac_service', 'appliance_repair',
+    'car_wash', 'styling',
   };
   static const _withMaterials = {
     'home_cleaning', 'office_cleaning', 'laundry',

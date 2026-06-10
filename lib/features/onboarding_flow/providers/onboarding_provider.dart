@@ -36,7 +36,7 @@ const List<String> kProvinciasRD = [
   'Valverde',
 ];
 
-// ─── Categorías de servicios (17) ─────────────────────────────────────────────
+// ─── Categorías de servicios (19) ─────────────────────────────────────────────
 const List<Map<String, String>> kServiceCategories = [
   {'id': 'home_cleaning',    'name': 'Limpieza del hogar',               'emoji': '🏠'},
   {'id': 'office_cleaning',  'name': 'Limpieza de oficinas',             'emoji': '🏢'},
@@ -55,6 +55,8 @@ const List<Map<String, String>> kServiceCategories = [
   {'id': 'appliance_repair', 'name': 'Reparación de electrodomésticos',  'emoji': '🔌'},
   {'id': 'ac_service',       'name': 'Aire acondicionado',               'emoji': '❄️'},
   {'id': 'security',         'name': 'Seguridad y vigilancia',           'emoji': '🔒'},
+  {'id': 'car_wash',         'name': 'Lavado de vehículos a domicilio',  'emoji': '🚗'},
+  {'id': 'styling',          'name': 'Estilismo a domicilio',            'emoji': '💈'},
 ];
 
 // ─── Preguntas del cuestionario por categoría ─────────────────────────────────
@@ -128,6 +130,14 @@ const Map<String, List<Map<String, String>>> kCategoryQuestions = {
   'security': [
     {'id': 'experiencia',  'text': '¿Tienes experiencia en seguridad, vigilancia o guardianía?'},
     {'id': 'referencias',  'text': '¿Puedes proveer referencias de empleos anteriores en seguridad?'},
+  ],
+  'car_wash': [
+    {'id': 'experiencia',  'text': '¿Tienes experiencia lavando vehículos de forma profesional?'},
+    {'id': 'herramientas', 'text': '¿Cuentas con equipos de lavado (hidrolavadora, aspiradora, productos, etc.)?'},
+  ],
+  'styling': [
+    {'id': 'experiencia',  'text': '¿Tienes experiencia en barbería, manicure, pedicure o trenzas?'},
+    {'id': 'herramientas', 'text': '¿Cuentas con tus propios materiales y herramientas de trabajo?'},
   ],
 };
 
