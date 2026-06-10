@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/supabase_service.dart';
 import '../../../core/services/demo_provider.dart';
+import '../../../core/services/payment_service.dart';
 import '../../../features/auth/providers/auth_provider.dart';
 import '../../providers_list/providers/providers_list_provider.dart';
 import '../screens/provider_services_screen.dart';
@@ -391,6 +392,59 @@ class _BookingRequestCardState extends ConsumerState<_BookingRequestCard> {
     try {
       final isDemo = ref.read(demoModeProvider);
       if (!isDemo) {
+        // ── Al completar: capturar el pago en escrow antes de actualizar el estado
+        if (newStatus == 'completed') {
+          final paymentIntentId =
+              widget.booking['stripe_payment_intent_id'] as String?;
+          final paymentStatus =
+              widget.booking['payment_status'] as String? ?? 'pending';
+
+          if (paymentIntentId != null && paymentStatus == 'authorized') {
+            // Capturar pago en Stripe + marcar payment_status='released' en BD
+            final captured = await PaymentService.capturePayment(
+              bookingId: widget.booking['id'] as String,
+              paymentIntentId: paymentIntentId,
+            );
+            if (!captured && mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text(
+                      '⚠️ No se pudo capturar el pago. Contacta soporte.'),
+                  backgroundColor: AppColors.warning,
+                ),
+              );
+              setState(() => _loading = false);
+              return; // No marcar completed si el pago falló
+            }
+            // La Edge Function ya actualiza status+payment_status en BD
+            setState(() => _loading = false);
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('🎉 Servicio completado — pago liberado'),
+                  backgroundColor: AppColors.success,
+                ),
+              );
+              final clientId =
+                  widget.booking['client_id'] as String? ?? '';
+              final clientName = Uri.encodeComponent(
+                  widget.booking['client_name'] as String? ?? 'Cliente');
+              final service = Uri.encodeComponent(
+                  widget.booking['service_name'] as String? ?? 'Servicio');
+              Future.delayed(const Duration(milliseconds: 800), () {
+                if (!mounted) return;
+                context.push(
+                  '/rate-client?bookingId=${widget.booking['id']}'
+                  '&clientId=$clientId'
+                  '&clientName=$clientName'
+                  '&service=$service',
+                );
+              });
+            }
+            return; // La Edge Function ya actualizó el estado
+          }
+        }
+
         await SupabaseService.client
             .from('bookings')
             .update({
@@ -459,8 +513,10 @@ class _BookingRequestCardState extends ConsumerState<_BookingRequestCard> {
   Widget build(BuildContext context) {
     final booking = widget.booking;
     final status = booking['status'] as String;
+    final paymentStatus = booking['payment_status'] as String? ?? 'pending';
     final date = DateTime.tryParse(booking['scheduled_date'] as String? ?? '');
     final price = booking['agreed_price'];
+    final paymentGuaranteed = paymentStatus == 'authorized';
 
     Color statusColor;
     Color statusBg;
@@ -557,13 +613,42 @@ class _BookingRequestCardState extends ConsumerState<_BookingRequestCard> {
                 const Icon(Icons.attach_money,
                     size: 14, color: AppColors.primary),
                 Text(
-                  '\$$price',
+                  'RD\$$price',
                   style: const TextStyle(
                     fontSize: 13,
                     color: AppColors.primary,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
+                if (paymentGuaranteed) ...[
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 7, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: AppColors.successLight,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                          color: AppColors.success.withValues(alpha: 0.4)),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.lock_outline,
+                            size: 10, color: AppColors.success),
+                        SizedBox(width: 3),
+                        Text(
+                          'Pago garantizado',
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: AppColors.success,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ],
             ),
           ],

@@ -305,7 +305,10 @@ class _BookingCard extends ConsumerWidget {
     final paymentStatus = booking['payment_status'] as String? ?? 'pending';
     final date = DateTime.tryParse(booking['scheduled_date'] as String? ?? '');
     final price = booking['agreed_price'];
-    final needsPayment = status == 'completed' && paymentStatus == 'pending';
+
+    // needsPayment: el servicio está aceptado/en curso y el cliente aún no garantizó el pago
+    final needsPayment = (status == 'accepted' || status == 'in_progress') &&
+        paymentStatus == 'pending';
 
     Color statusColor;
     Color statusBg;
@@ -316,17 +319,33 @@ class _BookingCard extends ConsumerWidget {
         statusBg = AppColors.warningLight;
         statusLabel = 'Pendiente';
       case 'accepted':
-        statusColor = AppColors.success;
-        statusBg = AppColors.successLight;
-        statusLabel = 'Confirmado';
+        // Mostrar estado del pago en garantía
+        if (paymentStatus == 'authorized') {
+          statusColor = AppColors.success;
+          statusBg = AppColors.successLight;
+          statusLabel = '🔒 Pago en garantía';
+        } else {
+          statusColor = AppColors.success;
+          statusBg = AppColors.successLight;
+          statusLabel = 'Confirmado';
+        }
       case 'in_progress':
-        statusColor = AppColors.info;
-        statusBg = AppColors.infoLight;
-        statusLabel = 'En progreso';
+        if (paymentStatus == 'authorized') {
+          statusColor = AppColors.info;
+          statusBg = AppColors.infoLight;
+          statusLabel = '🔒 En progreso · Garantizado';
+        } else {
+          statusColor = AppColors.info;
+          statusBg = AppColors.infoLight;
+          statusLabel = 'En progreso';
+        }
       case 'completed':
-        statusColor = paymentStatus == 'paid' ? AppColors.primary : AppColors.warning;
-        statusBg = paymentStatus == 'paid' ? AppColors.surfaceVariant : AppColors.warningLight;
-        statusLabel = paymentStatus == 'paid' ? 'Completado ✓' : 'Pago pendiente';
+        final isReleased =
+            paymentStatus == 'released' || paymentStatus == 'paid';
+        statusColor = isReleased ? AppColors.primary : AppColors.warning;
+        statusBg =
+            isReleased ? AppColors.surfaceVariant : AppColors.warningLight;
+        statusLabel = isReleased ? 'Completado ✓' : 'Pago pendiente';
       default:
         statusColor = AppColors.error;
         statusBg = AppColors.errorLight;

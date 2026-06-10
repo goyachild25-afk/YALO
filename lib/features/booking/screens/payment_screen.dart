@@ -83,7 +83,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Confirmar pago'),
+        title: const Text('Garantizar el pago'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.pop(),
@@ -149,7 +149,60 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
             _PaymentMethodSelector(),
             const SizedBox(height: 24),
 
-            // ── Seguridad ────────────────────────────────────────
+            // ── Cómo funciona el escrow ───────────────────────────
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: AppColors.primaryLighter,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                    color: AppColors.primary.withValues(alpha: 0.2)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Row(
+                    children: [
+                      Icon(Icons.lock_outline,
+                          color: AppColors.primary, size: 18),
+                      SizedBox(width: 8),
+                      Text(
+                        '¿Cómo funciona la garantía?',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  _EscrowStep(
+                    icon: Icons.credit_card_outlined,
+                    text:
+                        'Tu tarjeta se reserva HOY. No se cobra ningún dinero.',
+                  ),
+                  _EscrowStep(
+                    icon: Icons.handyman_outlined,
+                    text: 'El prestador realiza el servicio con total confianza.',
+                  ),
+                  _EscrowStep(
+                    icon: Icons.check_circle_outline,
+                    text:
+                        'Al marcar el servicio como completado, el cobro se realiza automáticamente.',
+                  ),
+                  _EscrowStep(
+                    icon: Icons.security_outlined,
+                    text:
+                        'Si el servicio no se realiza, tu dinero está 100% protegido.',
+                    isLast: true,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // ── Seguridad Stripe ─────────────────────────────────
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
@@ -158,11 +211,12 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
               ),
               child: const Row(
                 children: [
-                  Icon(Icons.lock_outline, color: AppColors.success, size: 18),
+                  Icon(Icons.verified_outlined,
+                      color: AppColors.success, size: 18),
                   SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Pago 100% seguro. Procesado por Stripe — nunca almacenamos tus datos de tarjeta.',
+                      'Reserva 100% segura. Procesada por Stripe — nunca almacenamos tus datos de tarjeta.',
                       style: TextStyle(
                         fontSize: 12,
                         color: AppColors.success,
@@ -175,9 +229,9 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
             ),
             const SizedBox(height: 32),
 
-            // ── Botón pagar ──────────────────────────────────────
+            // ── Botón garantizar ─────────────────────────────────
             PrimaryButton(
-              label: 'Pagar ${_format(widget.amount)}',
+              label: 'Garantizar ${_format(widget.amount)} 🔒',
               onPressed: _pay,
               isLoading: _isProcessing,
             ),
@@ -438,6 +492,42 @@ class _MethodTile extends StatelessWidget {
               ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+// ── Paso del flujo de escrow ──────────────────────────────────────────────────
+class _EscrowStep extends StatelessWidget {
+  final IconData icon;
+  final String text;
+  final bool isLast;
+
+  const _EscrowStep({
+    required this.icon,
+    required this.text,
+    this.isLast = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: isLast ? 0 : 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 15, color: AppColors.primary),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              text,
+              style: const TextStyle(
+                  fontSize: 12,
+                  color: AppColors.textSecondary,
+                  height: 1.4),
+            ),
+          ),
+        ],
       ),
     );
   }

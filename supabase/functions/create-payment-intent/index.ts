@@ -43,11 +43,15 @@ Deno.serve(async (req: Request) => {
     const basePrice = amount / clientFeeFactor;
     const applicationFee = Math.round(basePrice * 0.10); // 5% clientFee + 5% providerFee
 
-    // Crear PaymentIntent en Stripe
+    // Crear PaymentIntent con captura manual (escrow):
+    // La tarjeta queda AUTORIZADA (reservada) pero NO cobrada.
+    // El cobro real ocurre cuando el prestador marca el servicio como completado
+    // y el servidor llama a stripe.paymentIntents.capture().
     const paymentIntent = await stripe.paymentIntents.create({
-      amount,           // En centavos (ej: 250000 = RD$2,500)
-      currency,         // 'dop' para pesos dominicanos
+      amount,                 // En centavos (ej: 250000 = RD$2,500)
+      currency,               // 'dop' para pesos dominicanos
       description,
+      capture_method: "manual", // ← ESCROW: no cobra hasta capture()
       automatic_payment_methods: { enabled: true },
       metadata: {
         booking_id,

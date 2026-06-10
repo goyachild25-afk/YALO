@@ -34,7 +34,56 @@ class PaymentService {
     Stripe.merchantIdentifier = 'ServiciosYa';
   }
 
-  /// Procesar pago completo con el Payment Sheet de Stripe
+  /// Garantizar pago con el Payment Sheet de Stripe (escrow / captura manual).
+  ///
+  /// La tarjeta se AUTORIZA (reserva) pero NO se cobra en este momento.
+  /// El cobro ocurre cuando el prestador llama a [capturePayment].
+  ///
+  /// [amount]      Monto en centavos (ej: 250000 = RD$2,500)
+  /// [currency]    'dop' para pesos dominicanos, 'usd' para dólares
+  /// [description] Descripción del pago
+  /// [bookingId]   ID de la reserva para asociar el pago
+  static Future<PaymentResult> authorizePayment({
+    required BuildContext context,
+    required int amount,
+    required String currency,
+    required String description,
+    required String bookingId,
+  }) => processPayment(
+        context: context,
+        amount: amount,
+        currency: currency,
+        description: description,
+        bookingId: bookingId,
+      );
+
+  /// Capturar un pago ya autorizado (cobrar la tarjeta reservada).
+  /// Llamar cuando el prestador marca el servicio como completado.
+  ///
+  /// Retorna true si la captura fue exitosa.
+  static Future<bool> capturePayment({
+    required String bookingId,
+    required String paymentIntentId,
+  }) async {
+    try {
+      final response = await SupabaseService.client.functions.invoke(
+        'capture-payment',
+        body: {
+          'booking_id': bookingId,
+          'payment_intent_id': paymentIntentId,
+        },
+      );
+      return response.data?['success'] == true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Procesar pago completo con el Payment Sheet de Stripe.
+  ///
+  /// ⚠️  Con capture_method=manual (configurado en la Edge Function),
+  ///     este método AUTORIZA la tarjeta pero no la cobra todavía.
+  ///     Usar [capturePayment] para el cobro real al completar el servicio.
   ///
   /// [amount]      Monto en centavos (ej: 250000 = RD$2,500)
   /// [currency]    'dop' para pesos dominicanos, 'usd' para dólares
@@ -92,8 +141,17 @@ class PaymentService {
       // 3. Mostrar el Payment Sheet al usuario
       await Stripe.instance.presentPaymentSheet();
 
-      // 4. Pago exitoso
+      // 4. Autorización exitosa — marcar el booking como 'authorized' en Supabase
       final paymentIntentId = response.data['payment_intent_id'] as String? ?? '';
+      try {
+        await SupabaseService.client.from('bookings').update({
+          'payment_status': 'authorized',
+          'stripe_payment_intent_id': paymentIntentId,
+          'updated_at': DateTime.now().toIso8601String(),
+        }).eq('id', bookingId);
+      } catch (_) {
+        // No bloquear si la actualización falla — el pago ya fue autorizado en Stripe
+      }
       return PaymentResult.success(paymentIntentId);
     } on StripeException catch (e) {
       if (e.error.code == FailureCode.Canceled) {

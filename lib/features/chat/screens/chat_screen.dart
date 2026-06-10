@@ -346,7 +346,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
   // ── Banner de pago (solo cliente, cuando el precio está acordado) ────────────
   Widget _buildPayBanner(double agreedPrice) {
-    // El cliente paga el precio base + 5 % de Garantía ServiciosYa
+    // El cliente reserva el precio base + 5 % de Garantía ServiciosYa
+    // La tarjeta se AUTORIZA ahora; el cobro real ocurre al completar el servicio
     final total = PaymentService.clientTotal(agreedPrice);
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 10, 12, 10),
@@ -360,8 +361,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       ),
       child: Row(
         children: [
-          const Icon(Icons.handshake_outlined,
-              color: AppColors.success, size: 22),
+          const Icon(Icons.lock_outline, color: AppColors.success, size: 22),
           const SizedBox(width: 10),
           Expanded(
             child: Column(
@@ -377,8 +377,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                   ),
                 ),
                 Text(
-                  'Servicio RD\$${agreedPrice.toStringAsFixed(0)}'
-                  ' · Total: RD\$${total.toStringAsFixed(0)}',
+                  'Reserva RD\$${total.toStringAsFixed(0)} · '
+                  'Solo se cobra al completar',
                   style: const TextStyle(
                       fontSize: 11, color: AppColors.textSecondary),
                 ),
@@ -405,7 +405,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               '&provider=${Uri.encodeComponent(widget.otherUserName)}'
               '&currency=dop',
             ),
-            child: const Text('Pagar ahora'),
+            child: const Text('Garantizar 🔒'),
           ),
         ],
       ),
