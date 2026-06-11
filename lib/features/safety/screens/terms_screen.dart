@@ -65,7 +65,7 @@ class _TermsScreenState extends State<TermsScreen> {
                   ),
                   _buildSection(
                     '5. Pagos y comisiones',
-                    'ServiciosYa cobra una comisión del 15% sobre el valor de cada servicio. Esta comisión financia la operación de la plataforma, el sistema de seguridad y el soporte al usuario.\n\n'
+                    'ServiciosYa cobra una comisión total del 10% sobre el valor de cada servicio: un 5% como Garantía ServiciosYa (pagado por el cliente) y un 5% como Membresía de Visibilidad (descontado al prestador). Esta comisión financia la operación de la plataforma, el sistema de seguridad y el soporte al usuario.\n\n'
                     'Los pagos se procesan de forma segura. En ningún momento ServiciosYa almacena datos de tarjetas de crédito o débito.',
                   ),
                   _buildSection(

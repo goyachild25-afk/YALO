@@ -64,7 +64,7 @@ class HelpScreen extends StatelessWidget {
           const _FAQItem(
             question: '¿Cuánto cobra la plataforma?',
             answer:
-                'ServiciosYa cobra una comisión del 15% sobre el valor del servicio. Esta comisión ya está incluida en el precio que ves — el prestador recibe el 85% restante.',
+                'ServiciosYa cobra una comisión total del 10%: un 5% de Garantía ServiciosYa lo paga el cliente, y un 5% de Membresía de Visibilidad se descuenta al prestador. El prestador recibe el 95% del precio base acordado.',
           ),
           const _FAQItem(
             question: '¿Cómo verifico mi identidad como prestador?',
