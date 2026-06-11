@@ -12,7 +12,7 @@ import '../../../shared/widgets/custom_text_field.dart';
 
 /// Controla si los botones de Modo Demo son visibles.
 /// En producción: false. Para pruebas y demos: true.
-const bool kShowDemoButtons = true;
+const bool kShowDemoButtons = false;
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});

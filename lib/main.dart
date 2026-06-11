@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:timeago/timeago.dart' as timeago;
 import 'app.dart';
 import 'core/services/supabase_service.dart';
-import 'core/services/payment_service.dart';
 import 'core/services/notification_service.dart';
 
 void main() async {
@@ -25,11 +24,6 @@ void main() async {
   } catch (_) {
     // Firebase no configurado aún → notificaciones no disponibles
   }
-
-  // Inicializar Stripe (para pagos reales)
-  try {
-    PaymentService.initialize();
-  } catch (_) {}
 
   runApp(
     const ProviderScope(

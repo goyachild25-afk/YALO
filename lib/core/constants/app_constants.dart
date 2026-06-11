@@ -5,7 +5,8 @@ class AppConstants {
   static const String supabaseUrl = 'https://ivexcnunszcqoqzzdlfz.supabase.co';
   static const String supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml2ZXhjbnVuc3pjcW9xenpkbGZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5MDg4MzksImV4cCI6MjA5NTQ4NDgzOX0.q-65Ncoe7GAU3TvUSQg_nWD0j-jRzPmB8vbEH-kft9A';
   static const String googleMapsApiKey = 'AIzaSyAl7co1z59RELF4bZDO2HCRcWDtINPh560';
-  static const String stripePublishableKey = 'YOUR_STRIPE_PUBLISHABLE_KEY';
+  // Reservado para futura integración de pagos (PayPal / AZUL)
+  static const String paymentGatewayKey = '';
 
   static const double defaultRadius = 50.0; // km
   static const int maxPhotosPerProfile = 6;

@@ -216,7 +216,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
                   SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Reserva 100% segura. Procesada por Stripe — nunca almacenamos tus datos de tarjeta.',
+                      'Reserva 100% segura. Nunca almacenamos tus datos de pago.',
                       style: TextStyle(
                         fontSize: 12,
                         color: AppColors.success,
@@ -371,7 +371,7 @@ class _PaymentMethodSelector extends StatefulWidget {
 }
 
 class _PaymentMethodSelectorState extends State<_PaymentMethodSelector> {
-  int _selected = 0; // 0 = tarjeta, 1 = SINPE (futuro)
+  int _selected = 0; // 0 = tarjeta, 1 = PayPal (próximamente)
 
   @override
   Widget build(BuildContext context) {
@@ -387,7 +387,7 @@ class _PaymentMethodSelectorState extends State<_PaymentMethodSelector> {
         const SizedBox(height: 8),
         _MethodTile(
           icon: Icons.phone_android,
-          label: 'SINPE Móvil',
+          label: 'PayPal',
           subtitle: 'Próximamente disponible',
           selected: _selected == 1,
           onTap: null, // deshabilitado por ahora
