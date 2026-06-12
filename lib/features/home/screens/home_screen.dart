@@ -10,6 +10,7 @@ import '../../../features/auth/providers/auth_provider.dart';
 import '../../../features/notifications/providers/notifications_provider.dart';
 import '../../../shared/models/service_category_model.dart';
 import '../widgets/featured_providers_section.dart';
+import '../../../shared/widgets/pwa_install_banner.dart';
 
 // ─── Real stats from Supabase ─────────────────────────────────────────────────
 class _HomeStats {
@@ -131,7 +132,11 @@ class HomeScreen extends ConsumerWidget {
                       padding: EdgeInsets.symmetric(horizontal: 20),
                       child: _StatsRow(),
                     ),
-                    const SizedBox(height: 28),
+                    const SizedBox(height: 16),
+
+                    // ── Banner PWA install ──────────────────────────────────────
+                    const PwaInstallBanner(),
+                    const SizedBox(height: 12),
 
                     // ── Banner promocional ─────────────────────────────────────
                     const Padding(

@@ -22,8 +22,26 @@
   <link rel="manifest" href="manifest.json">
 
   <!-- Google Maps JS API — requerido por google_maps_flutter_web -->
-  <!-- Reemplaza YOUR_GOOGLE_MAPS_API_KEY con tu clave real cuando la tengas -->
   <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAl7co1z59RELF4bZDO2HCRcWDtINPh560" defer></script>
+
+  <!-- PWA install prompt capture -->
+  <script>
+    window.deferredPrompt = null;
+    window.appInstalled = false;
+    window.isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent.toLowerCase());
+    window.isInStandaloneMode = window.matchMedia('(display-mode: standalone)').matches
+      || window.navigator.standalone === true;
+
+    window.addEventListener('beforeinstallprompt', function(e) {
+      e.preventDefault();
+      window.deferredPrompt = e;
+    });
+    window.addEventListener('appinstalled', function() {
+      window.deferredPrompt = null;
+      window.appInstalled = true;
+      window.isInStandaloneMode = true;
+    });
+  </script>
 </head>
 <body>
   <script src="flutter_bootstrap.js" async></script>
