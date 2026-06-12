@@ -163,9 +163,16 @@ class _ClientOnboardingScreenState
         );
       }
 
+      // full_name: leer del metadata del auth (guardado en registro) — NOT NULL en DB
+      final meta = user.userMetadata ?? {};
+      final fullName = meta['full_name'] as String? ??
+          ref.read(currentUserProvider).value?.fullName ??
+          user.email?.split('@').first ?? '';
+
       await SupabaseService.client.from('profiles').upsert({
         'id': user.id,
-        'email': user.email ?? '',   // CRÍTICO: profiles.email NOT NULL — viene del auth, no del form
+        'email': user.email ?? '',
+        'full_name': fullName,
         'phone': _phoneCtrl.text.trim(),
         'province': _province ?? '',
         'city': _cityCtrl.text.trim(),
