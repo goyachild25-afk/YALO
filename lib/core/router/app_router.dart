@@ -30,6 +30,8 @@ import '../../features/provider_dashboard/screens/rate_client_screen.dart';
 import '../../features/home/screens/category_filter_screen.dart';
 import '../../features/onboarding_flow/screens/client_onboarding_screen.dart';
 import '../../features/onboarding_flow/screens/provider_onboarding_screen.dart';
+import '../../features/booking/screens/service_request_screen.dart';
+import '../../features/booking/screens/searching_provider_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authStateProvider);
@@ -88,12 +90,9 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/providers',
         builder: (context, state) {
           final categoryId = state.uri.queryParameters['category'];
-          final categoryName = state.uri.queryParameters['name'] != null
-              ? Uri.decodeComponent(state.uri.queryParameters['name']!)
-              : null;
-          final filterNotes = state.uri.queryParameters['notes'] != null
-              ? Uri.decodeComponent(state.uri.queryParameters['notes']!)
-              : null;
+          // state.uri.queryParameters already percent-decodes values
+          final categoryName = state.uri.queryParameters['name'];
+          final filterNotes = state.uri.queryParameters['notes'];
           return ProvidersListScreen(
             categoryId: categoryId,
             categoryName: categoryName,
@@ -128,8 +127,8 @@ final routerProvider = Provider<GoRouter>((ref) {
           return PaymentScreen(
             bookingId: params['bookingId'] ?? '',
             amount: double.tryParse(params['amount'] ?? '0') ?? 0,
-            serviceName: Uri.decodeComponent(params['service'] ?? ''),
-            providerName: Uri.decodeComponent(params['provider'] ?? ''),
+            serviceName: params['service'] ?? '',
+            providerName: params['provider'] ?? '',
             currency: params['currency'] ?? 'dop',
           );
         },
@@ -154,11 +153,8 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/chat/:bookingId',
         builder: (context, state) => ChatScreen(
           bookingId: state.pathParameters['bookingId']!,
-          otherUserName: Uri.decodeComponent(
-              state.uri.queryParameters['name'] ?? 'Usuario'),
-          serviceName: Uri.decodeComponent(
-              state.uri.queryParameters['service'] ?? 'Servicio'),
-          // provider=true → el usuario actual es el prestador (puede enviar ofertas)
+          otherUserName: state.uri.queryParameters['name'] ?? 'Usuario',
+          serviceName: state.uri.queryParameters['service'] ?? 'Servicio',
           isProvider: state.uri.queryParameters['provider'] == 'true',
         ),
       ),
@@ -201,10 +197,8 @@ final routerProvider = Provider<GoRouter>((ref) {
           return ReportDisputeScreen(
             bookingId: p['bookingId'] ?? '',
             reportedUserId: p['userId'] ?? '',
-            reportedUserName:
-                Uri.decodeComponent(p['userName'] ?? 'Usuario'),
-            serviceName:
-                Uri.decodeComponent(p['service'] ?? 'Servicio'),
+            reportedUserName: p['userName'] ?? 'Usuario',
+            serviceName: p['service'] ?? 'Servicio',
           );
         },
       ),
@@ -230,11 +224,27 @@ final routerProvider = Provider<GoRouter>((ref) {
           return RateClientScreen(
             bookingId: p['bookingId'] ?? '',
             clientId: p['clientId'] ?? '',
-            clientName: Uri.decodeComponent(p['clientName'] ?? 'Cliente'),
-            serviceName:
-                Uri.decodeComponent(p['service'] ?? 'Servicio'),
+            clientName: p['clientName'] ?? 'Cliente',
+            serviceName: p['service'] ?? 'Servicio',
           );
         },
+      ),
+      GoRoute(
+        path: '/service-request',
+        builder: (context, state) {
+          final p = state.uri.queryParameters;
+          return ServiceRequestScreen(
+            categoryId: p['category'] ?? '',
+            categoryName: p['name'] ?? 'Servicio',
+            filterNotes: p['notes'],
+          );
+        },
+      ),
+      GoRoute(
+        path: '/searching/:bookingId',
+        builder: (context, state) => SearchingProviderScreen(
+          bookingId: state.pathParameters['bookingId']!,
+        ),
       ),
     ],
     errorBuilder: (context, state) => Scaffold(

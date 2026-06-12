@@ -91,8 +91,8 @@ class _CategoryFilterScreenState extends State<CategoryFilterScreen> {
   void _goToProviders() {
     final summary = _buildAnswersSummary();
     context.push(
-      '/providers'
-      '?category=${widget.categoryId}'
+      '/service-request'
+      '?category=${Uri.encodeComponent(widget.categoryId)}'
       '&name=${Uri.encodeComponent(_config?.categoryName ?? '')}'
       '&notes=${Uri.encodeComponent(summary)}',
     );

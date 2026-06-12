@@ -260,6 +260,34 @@ final providerReviewsProvider =
   }
 });
 
+// ─── Booking individual — tiempo real (para pantalla de búsqueda) ────────────
+final singleBookingProvider =
+    StreamProvider.family<Map<String, dynamic>?, String>((ref, bookingId) {
+  if (bookingId.isEmpty) return Stream.value(null);
+  return SupabaseService.client
+      .from('bookings')
+      .stream(primaryKey: ['id'])
+      .eq('id', bookingId)
+      .map<Map<String, dynamic>?>((rows) =>
+          rows.isNotEmpty ? rows.first : null);
+});
+
+// ─── Solicitudes abiertas — para prestadores (broadcast sin provider_id) ─────
+final openRequestsProvider =
+    StreamProvider.family<List<Map<String, dynamic>>, String>(
+        (ref, province) {
+  return SupabaseService.client
+      .from('bookings')
+      .stream(primaryKey: ['id'])
+      .eq('status', 'pending')
+      .order('created_at', ascending: false)
+      .map<List<Map<String, dynamic>>>((rows) => rows
+          .where((r) =>
+              r['provider_id'] == null &&
+              (province.isEmpty || r['client_province'] == province))
+          .toList());
+});
+
 // ─── Reservas del cliente — tiempo real ──────────────────────────────────────
 //
 // SQL equivalente:

@@ -89,6 +89,9 @@ class ProviderDashboardScreen extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 24),
+            // ── Solicitudes abiertas (despacho automático) ────────────────────
+            const _OpenRequestsSection(),
+            const SizedBox(height: 24),
             const Text(
               'Solicitudes recientes',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
@@ -768,6 +771,339 @@ class _BookingRequestCardState extends ConsumerState<_BookingRequestCard> {
               ),
             ],
           ],
+        ],
+      ),
+    );
+  }
+}
+
+// ── Solicitudes abiertas (broadcast) ─────────────────────────────────────────
+class _OpenRequestsSection extends ConsumerStatefulWidget {
+  const _OpenRequestsSection();
+
+  @override
+  ConsumerState<_OpenRequestsSection> createState() =>
+      _OpenRequestsSectionState();
+}
+
+class _OpenRequestsSectionState extends ConsumerState<_OpenRequestsSection> {
+  String _province = '';
+  bool _loadingProfile = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProvince();
+  }
+
+  Future<void> _loadProvince() async {
+    try {
+      final user = SupabaseService.currentUser;
+      if (user == null) return;
+      final p = await SupabaseService.client
+          .from('provider_profiles')
+          .select('province')
+          .eq('user_id', user.id)
+          .maybeSingle();
+      if (mounted) setState(() => _province = p?['province'] as String? ?? '');
+    } finally {
+      if (mounted) setState(() => _loadingProfile = false);
+    }
+  }
+
+  Future<void> _acceptRequest(Map<String, dynamic> booking) async {
+    final user = SupabaseService.currentUser;
+    if (user == null) return;
+
+    try {
+      final profile = await SupabaseService.client
+          .from('provider_profiles')
+          .select('id, full_name, avatar_url')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+      if (profile == null) {
+        _showSnack('Completa tu perfil de prestador primero');
+        return;
+      }
+
+      final updated = await SupabaseService.client
+          .from('bookings')
+          .update({
+            'provider_id': profile['id'],
+            'provider_name': profile['full_name'],
+            'provider_avatar_url': profile['avatar_url'],
+            'status': 'accepted',
+            'updated_at': DateTime.now().toIso8601String(),
+          })
+          .eq('id', booking['id'] as String)
+          .eq('status', 'pending')
+          .select();
+
+      if (!mounted) return;
+
+      if ((updated as List).isEmpty) {
+        _showSnack('Este servicio ya fue tomado por otro prestador', AppColors.warning);
+      } else {
+        _showSnack('¡Solicitud aceptada!', AppColors.success);
+      }
+    } catch (e) {
+      if (mounted) _showSnack('Error: $e');
+    }
+  }
+
+  void _showSnack(String msg, [Color color = AppColors.error]) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(msg), backgroundColor: color),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (ref.watch(demoModeProvider)) return const SizedBox.shrink();
+    if (_loadingProfile) return const SizedBox.shrink();
+
+    final requestsAsync = ref.watch(openRequestsProvider(_province));
+
+    return requestsAsync.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+      data: (requests) {
+        if (requests.isEmpty) return const SizedBox.shrink();
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Text(
+                  'Solicitudes disponibles',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: AppColors.error,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    '${requests.length}',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            const Text(
+              'Clientes de tu área buscando prestador',
+              style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+            ),
+            const SizedBox(height: 12),
+            ...requests.take(5).map(
+                  (r) => _OpenRequestCard(
+                    request: r,
+                    onAccept: () => _acceptRequest(r),
+                  ),
+                ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _OpenRequestCard extends StatelessWidget {
+  final Map<String, dynamic> request;
+  final VoidCallback onAccept;
+
+  const _OpenRequestCard({required this.request, required this.onAccept});
+
+  @override
+  Widget build(BuildContext context) {
+    final serviceName = request['service_name'] as String? ?? 'Servicio';
+    final clientName = request['client_name'] as String? ?? 'Cliente';
+    final address = request['address'] as String? ?? '';
+    final province = request['client_province'] as String? ?? '';
+    final scheduledDate = request['scheduled_date'] as String?;
+    final notes = request['notes'] as String?;
+
+    DateTime? date;
+    if (scheduledDate != null) {
+      try {
+        date = DateTime.parse(scheduledDate).toLocal();
+      } catch (_) {}
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.4)),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withValues(alpha: 0.08),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppColors.primaryLighter,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  serviceName,
+                  style: const TextStyle(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: AppColors.warningLight,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.person_search_outlined,
+                        size: 12, color: AppColors.warning),
+                    SizedBox(width: 4),
+                    Text(
+                      'Buscando',
+                      style: TextStyle(
+                        color: AppColors.warning,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+
+          // Client + location
+          Row(
+            children: [
+              const Icon(Icons.person_outline, size: 14, color: AppColors.textSecondary),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  clientName,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          if (province.isNotEmpty || address.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Row(
+              children: [
+                const Icon(Icons.location_on_outlined,
+                    size: 14, color: AppColors.textSecondary),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    [if (province.isNotEmpty) province, if (address.isNotEmpty) address]
+                        .join(' · '),
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppColors.textSecondary,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ],
+          if (date != null) ...[
+            const SizedBox(height: 6),
+            Row(
+              children: [
+                const Icon(Icons.calendar_today_outlined,
+                    size: 14, color: AppColors.textSecondary),
+                const SizedBox(width: 6),
+                Text(
+                  '${date.day}/${date.month}/${date.year} a las ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ],
+          if (notes != null && notes.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(Icons.note_outlined,
+                    size: 14, color: AppColors.textSecondary),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    notes,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppColors.textSecondary,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ],
+
+          const SizedBox(height: 14),
+
+          // Accept button
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              icon: const Icon(Icons.check_circle_outline, size: 18),
+              label: const Text('Aceptar solicitud'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.success,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                textStyle: const TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 14,
+                ),
+              ),
+              onPressed: onAccept,
+            ),
+          ),
         ],
       ),
     );
