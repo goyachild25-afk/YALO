@@ -134,9 +134,11 @@ class _SearchingProviderScreenState
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   // Radar animation
-                  _RadarAnimation(
-                    radarCtrl: _radarCtrl,
-                    pulseCtrl: _pulseCtrl,
+                  RepaintBoundary(
+                    child: _RadarAnimation(
+                      radarCtrl: _radarCtrl,
+                      pulseCtrl: _pulseCtrl,
+                    ),
                   ),
 
                   const SizedBox(height: 36),

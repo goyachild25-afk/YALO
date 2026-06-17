@@ -152,10 +152,12 @@ class _ProvidersListScreenState extends ConsumerState<ProvidersListScreen> {
                   padding: const EdgeInsets.all(16),
                   itemCount: sorted.length,
                   separatorBuilder: (_, __) => const SizedBox(height: 12),
-                  itemBuilder: (_, i) => ProviderCard(
-                    provider: sorted[i],
-                    compact: true,
-                    onTap: () => context.push('/provider/${sorted[i].id}'),
+                  itemBuilder: (_, i) => RepaintBoundary(
+                    child: ProviderCard(
+                      provider: sorted[i],
+                      compact: true,
+                      onTap: () => context.push('/provider/${sorted[i].id}'),
+                    ),
                   ),
                 );
               },

@@ -1,4 +1,5 @@
-﻿import 'package:flutter/material.dart';
+﻿import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
@@ -299,7 +300,12 @@ class _CollapsedTitle extends StatelessWidget {
               ),
               child: ClipOval(
                 child: user?.avatarUrl != null
-                    ? Image.network(user!.avatarUrl!, fit: BoxFit.cover)
+                    ? CachedNetworkImage(
+                        imageUrl: user!.avatarUrl!,
+                        fit: BoxFit.cover,
+                        placeholder: (_, __) => const SizedBox.shrink(),
+                        errorWidget: (_, __, ___) => const SizedBox.shrink(),
+                      )
                     : Center(
                         child: Text(
                           user?.fullName.isNotEmpty == true

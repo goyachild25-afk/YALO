@@ -118,7 +118,7 @@ class ProviderProfileScreen extends ConsumerWidget {
           radius: 36,
           backgroundColor: AppColors.primaryLighter,
           backgroundImage: provider.avatarUrl != null
-              ? NetworkImage(provider.avatarUrl!)
+              ? CachedNetworkImageProvider(provider.avatarUrl!)
               : null,
           child: provider.avatarUrl == null
               ? Text(
@@ -544,7 +544,7 @@ class _ReviewTile extends StatelessWidget {
                 radius: 18,
                 backgroundColor: AppColors.primaryLighter,
                 backgroundImage: review.clientAvatarUrl != null
-                    ? NetworkImage(review.clientAvatarUrl!)
+                    ? CachedNetworkImageProvider(review.clientAvatarUrl!)
                     : null,
                 child: review.clientAvatarUrl == null
                     ? Text(
