@@ -106,7 +106,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
       if (mounted) {
         setState(() => _isLoading = false);
         // El pago se realiza DESPUÉS de que el prestador complete el servicio
-        context.pushReplacement('/booking-confirmation');
+        context.push('/booking-confirmation');
       }
       return;
     }
@@ -169,7 +169,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
 
       if (mounted) {
         // El pago se realiza DESPUÉS de que el prestador complete el servicio
-        context.pushReplacement('/booking-confirmation');
+        context.push('/booking-confirmation');
       }
     } catch (e) {
       _showSnack('Error al crear la solicitud: $e', AppColors.error);

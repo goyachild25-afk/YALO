@@ -209,15 +209,11 @@ class _ActivityMapSectionState extends State<_ActivityMapSection>
         ClipRRect(
           borderRadius: BorderRadius.circular(16),
           child: RepaintBoundary(
-            child: SizedBox(
-              height: 155,
-              width: double.infinity,
-              child: AnimatedBuilder(
-                animation: _pulseCtrl,
-                builder: (_, __) => CustomPaint(
-                  painter: _DRMapPainter(counts, _pulseCtrl.value),
-                  size: Size.infinite,
-                ),
+            child: AnimatedBuilder(
+              animation: _pulseCtrl,
+              builder: (context, _) => CustomPaint(
+                painter: _DRMapPainter(counts, _pulseCtrl.value),
+                size: Size(MediaQuery.of(context).size.width - 40, 155),
               ),
             ),
           ),
@@ -779,7 +775,7 @@ class _OpenRequestCardState extends State<_OpenRequestCard>
                             try {
                               await SupabaseService.client
                                   .from('bookings')
-                                  .delete()
+                                  .update({'status': 'rejected', 'updated_at': DateTime.now().toIso8601String()})
                                   .eq('id', widget.request['id'] as String);
                               if (mounted) {
                                 ScaffoldMessenger.of(context).showSnackBar(

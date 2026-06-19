@@ -76,7 +76,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
   }
 
   void _showSuccess() {
-    context.pushReplacement('/booking-confirmation');
+    context.push('/booking-confirmation');
   }
 
   @override
