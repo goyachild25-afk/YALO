@@ -461,7 +461,9 @@ class _OpenRequestsWithMap extends ConsumerStatefulWidget {
 class _OpenRequestsWithMapState extends ConsumerState<_OpenRequestsWithMap> {
   String _province = '';
   List<String> _categoryNames = [];
+  List<String> _categoryIds = [];
   bool _loadingProfile = true;
+  int _previousRequestCount = 0;
 
   @override
   void initState() {
@@ -485,11 +487,13 @@ class _OpenRequestsWithMapState extends ConsumerState<_OpenRequestsWithMap> {
       // Categorías del prestador (para filtrar solicitudes por nicho)
       final services = await ref.read(myProviderServicesProvider.future);
       final categories = services.map((s) => s.categoryName.toLowerCase()).toList();
+      final catIds = services.map((s) => s.categoryId).toList();
 
       if (mounted) {
         setState(() {
           _province = province;
           _categoryNames = categories;
+          _categoryIds = catIds;
         });
       }
     } finally {
@@ -498,10 +502,14 @@ class _OpenRequestsWithMapState extends ConsumerState<_OpenRequestsWithMap> {
   }
 
   bool _matchesCategory(Map<String, dynamic> request) {
-    if (_categoryNames.isEmpty) return true;
+    if (_categoryNames.isEmpty && _categoryIds.isEmpty) return true;
+    // Coincidencia exacta por category_id (más confiable)
+    final catId = request['category_id'] as String? ?? '';
+    if (catId.isNotEmpty && _categoryIds.contains(catId)) return true;
+    // Fallback: coincidencia por nombre
     final svcName = (request['service_name'] as String? ?? '').toLowerCase();
-    return _categoryNames.any(
-      (cat) => svcName.contains(cat) || cat.contains(svcName.split(' ').first));
+    if (svcName.isEmpty) return true;
+    return _categoryNames.any((cat) => svcName.contains(cat) || cat.contains(svcName));
   }
 
   Future<void> _acceptRequest(Map<String, dynamic> booking) async {
@@ -560,6 +568,28 @@ class _OpenRequestsWithMapState extends ConsumerState<_OpenRequestsWithMap> {
         final matched = allRequests
             .where((r) => r['provider_id'] == null && _matchesCategory(r))
             .toList();
+
+        // Notificación si llega una solicitud nueva que coincide
+        if (matched.length > _previousRequestCount && _previousRequestCount > 0) {
+          Future.microtask(() {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: const Row(
+                    children: [
+                      Icon(Icons.notifications_active, color: Colors.white, size: 20),
+                      SizedBox(width: 12),
+                      Expanded(child: Text('¡Nueva solicitud disponible!'))
+                    ],
+                  ),
+                  backgroundColor: AppColors.success,
+                  duration: const Duration(seconds: 4),
+                ),
+              );
+            }
+          });
+        }
+        _previousRequestCount = matched.length;
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,

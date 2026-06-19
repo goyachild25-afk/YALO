@@ -279,12 +279,18 @@ final openRequestsProvider =
   return SupabaseService.client
       .from('bookings')
       .stream(primaryKey: ['id'])
-      .eq('status', 'pending')
       .order('created_at', ascending: false)
       .map<List<Map<String, dynamic>>>((rows) => rows
-          .where((r) =>
-              r['provider_id'] == null &&
-              (province.isEmpty || r['client_province'] == province))
+          .where((r) {
+            // Solo solicitudes sin prestador asignado y pendientes
+            if (r['provider_id'] != null) return false;
+            if ((r['status'] as String? ?? '') != 'pending') return false;
+            // Filtro de provincia: mostrar si alguno de los dos no tiene provincia,
+            // o si coinciden exactamente
+            if (province.isEmpty) return true;
+            final clientProv = r['client_province'] as String? ?? '';
+            return clientProv.isEmpty || clientProv == province;
+          })
           .toList());
 });
 

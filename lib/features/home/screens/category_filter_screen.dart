@@ -109,9 +109,15 @@ class _CategoryFilterScreenState extends State<CategoryFilterScreen> {
     final config = _config;
     final category = _category;
 
-    // Si no hay filtros para esta categoría, ir directo a proveedores
+    // Si no hay filtros para esta categoría, ir directo a la solicitud
     if (config == null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => _goToProviders());
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        context.go(
+          '/service-request'
+          '?category=${Uri.encodeComponent(widget.categoryId)}'
+          '&name=${Uri.encodeComponent(serviceCategories.firstWhere((c) => c.id == widget.categoryId, orElse: () => serviceCategories.first).name)}',
+        );
+      });
       return const Scaffold(
         body: Center(child: CircularProgressIndicator()),
       );
