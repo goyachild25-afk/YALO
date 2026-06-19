@@ -1141,6 +1141,17 @@ class _BookingRequestCardState extends ConsumerState<_BookingRequestCard> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.success, foregroundColor: Colors.white))),
               ]),
+              const SizedBox(height: 8),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  icon: const Icon(Icons.cancel_outlined, size: 16),
+                  label: const Text('Cancelar servicio'),
+                  style: OutlinedButton.styleFrom(foregroundColor: AppColors.error,
+                      side: const BorderSide(color: AppColors.error)),
+                  onPressed: () => _updateStatus('rejected'),
+                ),
+              ),
             ],
             if (status == 'completed') ...[
               const SizedBox(height: 12),

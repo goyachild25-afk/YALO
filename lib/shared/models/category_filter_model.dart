@@ -108,17 +108,6 @@ final Map<String, CategoryFilterConfig> categoryFilters = {
           FilterOption(id: 'pool_add', label: 'Piscina (como servicio adicional)', emoji: '🏊'),
         ],
       ),
-      // 5. Frecuencia
-      FilterQuestion(
-        id: 'frequency',
-        question: '¿Con qué frecuencia lo necesitas?',
-        options: [
-          FilterOption(id: 'once', label: 'Una sola vez', emoji: '1️⃣'),
-          FilterOption(id: 'weekly', label: 'Cada semana', emoji: '📅'),
-          FilterOption(id: 'biweekly', label: 'Cada dos semanas', emoji: '🗓️'),
-          FilterOption(id: 'monthly', label: 'Una vez al mes', emoji: '📆'),
-        ],
-      ),
     ],
   ),
 
@@ -150,16 +139,6 @@ final Map<String, CategoryFilterConfig> categoryFilters = {
           FilterOption(id: 'small', label: 'Pequeño (jardín de apartamento o patio)', emoji: '🪴'),
           FilterOption(id: 'medium', label: 'Mediano (jardín de casa residencial)', emoji: '🌿'),
           FilterOption(id: 'large', label: 'Grande (finca, condominio o negocio)', emoji: '🌳'),
-        ],
-      ),
-      FilterQuestion(
-        id: 'frequency',
-        question: '¿Con qué frecuencia lo necesitas?',
-        options: [
-          FilterOption(id: 'once', label: 'Una sola vez', emoji: '1️⃣'),
-          FilterOption(id: 'weekly', label: 'Cada semana', emoji: '📅'),
-          FilterOption(id: 'biweekly', label: 'Cada dos semanas', emoji: '🗓️'),
-          FilterOption(id: 'monthly', label: 'Una vez al mes', emoji: '📆'),
         ],
       ),
     ],
@@ -357,15 +336,6 @@ final Map<String, CategoryFilterConfig> categoryFilters = {
           FilterOption(id: 'medium', label: '3–5 personas', emoji: '👨‍👩‍👧'),
           FilterOption(id: 'large', label: '6–15 personas', emoji: '👨‍👩‍👧‍👦'),
           FilterOption(id: 'event', label: '+15 personas (evento)', emoji: '🎊'),
-        ],
-      ),
-      FilterQuestion(
-        id: 'frequency',
-        question: '¿Con qué frecuencia?',
-        options: [
-          FilterOption(id: 'once', label: 'Una sola vez', emoji: '1️⃣'),
-          FilterOption(id: 'weekly', label: 'Cada semana', emoji: '📅'),
-          FilterOption(id: 'daily', label: 'Todos los días', emoji: '🔄'),
         ],
       ),
     ],

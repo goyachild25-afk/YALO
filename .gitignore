@@ -60,3 +60,4 @@ gen_icons.js
 
 # Supabase local
 supabase/.temp/
+.env
