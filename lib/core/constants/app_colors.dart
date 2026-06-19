@@ -31,7 +31,7 @@ class AppColors {
   static const Color secondary = Color(0xFF00B4D8); // Turquesa caribeño
 
   // ── Fondos ───────────────────────────────────────────────────────────────────
-  static const Color background      = Color(0xFFF0F7FF); // Cielo tropical
+  static const Color background      = Color(0xFFFAF8F3); // Crema cálido y acogedor
   static const Color surface         = Color(0xFFFFFFFF); // Blanco perla
   static const Color surfaceVariant  = Color(0xFFE8F4FD); // Agua turquesa suave
   static const Color surfaceTint     = Color(0xFFF5FAFE); // Brisa oceánica

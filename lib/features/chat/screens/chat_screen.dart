@@ -535,7 +535,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       reverse: true,
       itemCount: _demoLocalMessages.length,
       itemBuilder: (_, i) {
-        final msg = _demoLocalMessages[_demoLocalMessages.length - 1 - i];
+        final msg = _demoLocalMessages[i];
         return Padding(
           padding: const EdgeInsets.symmetric(vertical: 4),
           child: _MessageBubble(
@@ -566,7 +566,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           reverse: true,
           itemCount: messages.length,
           itemBuilder: (_, i) {
-            final msg = messages[messages.length - 1 - i];
+            final msg = messages[i];
             return Padding(
               padding: const EdgeInsets.symmetric(vertical: 4),
               child: _MessageBubble(
