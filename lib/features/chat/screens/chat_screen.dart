@@ -449,6 +449,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     return Scaffold(
       appBar: AppBar(
         titleSpacing: 0,
+        elevation: 1,
+        shadowColor: Colors.black12,
         title: Row(
           children: [
             CircleAvatar(
@@ -465,7 +467,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 ),
               ),
             ),
-            const SizedBox(width: 10),
+            const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -475,13 +477,20 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                     style: const TextStyle(
                         fontSize: 15, fontWeight: FontWeight.w600),
                   ),
-                  Text(
-                    widget.serviceName,
-                    style: const TextStyle(
-                      fontSize: 11,
-                      color: AppColors.textSecondary,
-                      fontWeight: FontWeight.w400,
-                    ),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          widget.serviceName,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: AppColors.textSecondary,
+                            fontWeight: FontWeight.w400,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -493,23 +502,26 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 child: IconButton(
                   icon: const Icon(Icons.local_offer_outlined, size: 20),
                   onPressed: _showSendOfferDialog,
-                  tooltip: 'Enviar oferta',
+                  tooltip: 'Enviar oferta de precio',
                 ),
               ),
           ],
         ),
       ),
-      body: Column(
-        children: [
-          Expanded(
-            child: isDemo
-                ? _buildDemoMessages(currentUserId)
-                : _buildRealtimeMessages(currentUserId),
-          ),
-          // Banner de pago: aparece en cuanto el precio queda acordado
-          if (payPrice != null) _buildPayBanner(payPrice),
-          _buildInputBar(),
-        ],
+      body: Container(
+        color: const Color(0xFFFAF8F3), // Crema cálido y acogedor
+        child: Column(
+          children: [
+            Expanded(
+              child: isDemo
+                  ? _buildDemoMessages(currentUserId)
+                  : _buildRealtimeMessages(currentUserId),
+            ),
+            // Banner de pago: aparece en cuanto el precio queda acordado
+            if (payPrice != null) _buildPayBanner(payPrice),
+            _buildInputBar(),
+          ],
+        ),
       ),
     );
   }
@@ -520,19 +532,23 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     return ListView.builder(
       controller: _scrollCtrl,
       padding: const EdgeInsets.fromLTRB(12, 16, 12, 12),
+      reverse: true,
       itemCount: _demoLocalMessages.length,
-      itemBuilder: (_, i) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 4),
-        child: _MessageBubble(
-          message: _demoLocalMessages[i],
-          isMine: _demoLocalMessages[i].isMine(currentUserId),
-          isProvider: widget.isProvider,
-          onAcceptOffer: _acceptOffer,
-          onCounterOffer: _sendCounterOffer,
-          onAcceptCounterOffer: _acceptCounterOffer,
-          onRejectOffer: _rejectOffer,
-        ),
-      ),
+      itemBuilder: (_, i) {
+        final msg = _demoLocalMessages[_demoLocalMessages.length - 1 - i];
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: _MessageBubble(
+            message: msg,
+            isMine: msg.isMine(currentUserId),
+            isProvider: widget.isProvider,
+            onAcceptOffer: _acceptOffer,
+            onCounterOffer: _sendCounterOffer,
+            onAcceptCounterOffer: _acceptCounterOffer,
+            onRejectOffer: _rejectOffer,
+          ),
+        );
+      },
     );
   }
 
@@ -547,19 +563,23 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         return ListView.builder(
           controller: _scrollCtrl,
           padding: const EdgeInsets.fromLTRB(12, 16, 12, 12),
+          reverse: true,
           itemCount: messages.length,
-          itemBuilder: (_, i) => Padding(
-            padding: const EdgeInsets.symmetric(vertical: 4),
-            child: _MessageBubble(
-              message: messages[i],
-              isMine: messages[i].isMine(currentUserId),
-              isProvider: widget.isProvider,
-              onAcceptOffer: _acceptOffer,
-              onCounterOffer: _sendCounterOffer,
-              onAcceptCounterOffer: _acceptCounterOffer,
-              onRejectOffer: _rejectOffer,
-            ),
-          ),
+          itemBuilder: (_, i) {
+            final msg = messages[messages.length - 1 - i];
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: _MessageBubble(
+                message: msg,
+                isMine: msg.isMine(currentUserId),
+                isProvider: widget.isProvider,
+                onAcceptOffer: _acceptOffer,
+                onCounterOffer: _sendCounterOffer,
+                onAcceptCounterOffer: _acceptCounterOffer,
+                onRejectOffer: _rejectOffer,
+              ),
+            );
+          },
         );
       },
     );
@@ -600,9 +620,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   Widget _buildInputBar() {
     return Container(
       padding: EdgeInsets.fromLTRB(
-          10, 10, 10, MediaQuery.of(context).padding.bottom + 10),
+          10, 12, 8, MediaQuery.of(context).padding.bottom + 12),
       decoration: const BoxDecoration(
-        color: AppColors.background,
+        color: const Color(0xFFFAF8F3), // Mismo fondo acogedor
         border: Border(top: BorderSide(color: AppColors.divider, width: 0.5)),
       ),
       child: Row(
@@ -617,42 +637,55 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 hintText: 'Escribe un mensaje...',
                 hintStyle: const TextStyle(fontSize: 14, color: AppColors.textHint),
                 filled: true,
-                fillColor: AppColors.surface,
+                fillColor: Colors.white,
                 contentPadding: const EdgeInsets.symmetric(
                     horizontal: 16, vertical: 12),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(24),
-                  borderSide: const BorderSide(color: AppColors.divider, width: 0.5),
+                  borderSide: const BorderSide(color: Color(0xFFE0DDD5), width: 1),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(24),
-                  borderSide: const BorderSide(color: AppColors.divider, width: 0.5),
+                  borderSide: const BorderSide(color: Color(0xFFE0DDD5), width: 1),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(24),
+                  borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
                 ),
               ),
               onSubmitted: (_) => _send(),
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 10),
           GestureDetector(
             onTap: _send,
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
-              width: 44,
-              height: 44,
+              width: 48,
+              height: 48,
               decoration: BoxDecoration(
-                color: _textCtrl.text.isEmpty ? AppColors.primaryLighter : AppColors.primary,
+                gradient: _textCtrl.text.isEmpty
+                    ? LinearGradient(colors: [AppColors.primary.withValues(alpha: 0.5), AppColors.primary.withValues(alpha: 0.3)])
+                    : AppColors.primaryGradient,
                 shape: BoxShape.circle,
+                boxShadow: _textCtrl.text.isEmpty
+                    ? []
+                    : [BoxShadow(
+                        color: AppColors.primary.withValues(alpha: 0.35),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      )],
               ),
               child: _sending
                   ? const Padding(
-                      padding: EdgeInsets.all(10),
+                      padding: EdgeInsets.all(12),
                       child: CircularProgressIndicator(
                           strokeWidth: 2.5, color: Colors.white),
                     )
                   : Icon(
                       _textCtrl.text.isEmpty ? Icons.add_rounded : Icons.send_rounded,
                       color: Colors.white,
-                      size: 20),
+                      size: 22),
             ),
           ),
         ],
