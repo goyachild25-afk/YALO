@@ -263,7 +263,7 @@ class _Page2 extends StatelessWidget {
     final h = MediaQuery.of(context).size.height;
     final lottieSz = h < 700 ? 150.0 : 190.0;
     final gap1 = h < 700 ? 16.0 : 28.0;
-    return Padding(
+    return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 28),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,

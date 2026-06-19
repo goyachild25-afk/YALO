@@ -466,24 +466,36 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               ),
             ),
             const SizedBox(width: 10),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  widget.otherUserName,
-                  style: const TextStyle(
-                      fontSize: 15, fontWeight: FontWeight.w600),
-                ),
-                Text(
-                  widget.serviceName,
-                  style: const TextStyle(
-                    fontSize: 11,
-                    color: AppColors.textSecondary,
-                    fontWeight: FontWeight.w400,
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    widget.otherUserName,
+                    style: const TextStyle(
+                        fontSize: 15, fontWeight: FontWeight.w600),
                   ),
-                ),
-              ],
+                  Text(
+                    widget.serviceName,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: AppColors.textSecondary,
+                      fontWeight: FontWeight.w400,
+                    ),
+                  ),
+                ],
+              ),
             ),
+            // Botón de oferta en AppBar (solo para prestadores)
+            if (widget.isProvider)
+              Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: IconButton(
+                  icon: const Icon(Icons.local_offer_outlined, size: 20),
+                  onPressed: _showSendOfferDialog,
+                  tooltip: 'Enviar oferta',
+                ),
+              ),
           ],
         ),
       ),
@@ -499,18 +511,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           _buildInputBar(),
         ],
       ),
-      // Botón flotante para enviar oferta (solo para prestadores)
-      floatingActionButton: widget.isProvider
-          ? FloatingActionButton.extended(
-              onPressed: _showSendOfferDialog,
-              backgroundColor: AppColors.primary,
-              icon: const Icon(Icons.local_offer_outlined,
-                  color: Colors.white, size: 18),
-              label: const Text('Enviar oferta',
-                  style: TextStyle(color: Colors.white, fontSize: 13)),
-            )
-          : null,
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 
@@ -519,16 +519,20 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     if (_demoLocalMessages.isEmpty) return _buildEmptyChat();
     return ListView.builder(
       controller: _scrollCtrl,
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 80),
+      padding: const EdgeInsets.fromLTRB(12, 16, 12, 12),
       itemCount: _demoLocalMessages.length,
-      itemBuilder: (_, i) => _MessageBubble(
-        message: _demoLocalMessages[i],
-        isMine: _demoLocalMessages[i].isMine(currentUserId),
-        isProvider: widget.isProvider,
-        onAcceptOffer: _acceptOffer,
-        onCounterOffer: _sendCounterOffer,
-        onAcceptCounterOffer: _acceptCounterOffer,
-        onRejectOffer: _rejectOffer,
+      itemSpacing: 2,
+      itemBuilder: (_, i) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: _MessageBubble(
+          message: _demoLocalMessages[i],
+          isMine: _demoLocalMessages[i].isMine(currentUserId),
+          isProvider: widget.isProvider,
+          onAcceptOffer: _acceptOffer,
+          onCounterOffer: _sendCounterOffer,
+          onAcceptCounterOffer: _acceptCounterOffer,
+          onRejectOffer: _rejectOffer,
+        ),
       ),
     );
   }
@@ -543,16 +547,19 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         _scrollToBottom();
         return ListView.builder(
           controller: _scrollCtrl,
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 80),
+          padding: const EdgeInsets.fromLTRB(12, 16, 12, 12),
           itemCount: messages.length,
-          itemBuilder: (_, i) => _MessageBubble(
-            message: messages[i],
-            isMine: messages[i].isMine(currentUserId),
-            isProvider: widget.isProvider,
-            onAcceptOffer: _acceptOffer,
-            onCounterOffer: _sendCounterOffer,
-            onAcceptCounterOffer: _acceptCounterOffer,
-            onRejectOffer: _rejectOffer,
+          itemBuilder: (_, i) => Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: _MessageBubble(
+              message: messages[i],
+              isMine: messages[i].isMine(currentUserId),
+              isProvider: widget.isProvider,
+              onAcceptOffer: _acceptOffer,
+              onCounterOffer: _sendCounterOffer,
+              onAcceptCounterOffer: _acceptCounterOffer,
+              onRejectOffer: _rejectOffer,
+            ),
           ),
         );
       },
@@ -594,10 +601,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   Widget _buildInputBar() {
     return Container(
       padding: EdgeInsets.fromLTRB(
-          12, 8, 12, MediaQuery.of(context).padding.bottom + 8),
+          10, 10, 10, MediaQuery.of(context).padding.bottom + 10),
       decoration: const BoxDecoration(
-        color: AppColors.surface,
-        border: Border(top: BorderSide(color: AppColors.divider)),
+        color: AppColors.background,
+        border: Border(top: BorderSide(color: AppColors.divider, width: 0.5)),
       ),
       child: Row(
         children: [
@@ -609,13 +616,18 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               textCapitalization: TextCapitalization.sentences,
               decoration: InputDecoration(
                 hintText: 'Escribe un mensaje...',
+                hintStyle: const TextStyle(fontSize: 14, color: AppColors.textHint),
                 filled: true,
-                fillColor: AppColors.surfaceVariant,
+                fillColor: AppColors.surface,
                 contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16, vertical: 10),
+                    horizontal: 16, vertical: 12),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(24),
-                  borderSide: BorderSide.none,
+                  borderSide: const BorderSide(color: AppColors.divider, width: 0.5),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(24),
+                  borderSide: const BorderSide(color: AppColors.divider, width: 0.5),
                 ),
               ),
               onSubmitted: (_) => _send(),
@@ -626,27 +638,22 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             onTap: _send,
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
-              width: 46,
-              height: 46,
+              width: 44,
+              height: 44,
               decoration: BoxDecoration(
-                gradient: AppColors.primaryGradient,
+                color: _textCtrl.text.isEmpty ? AppColors.primaryLighter : AppColors.primary,
                 shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.primary.withValues(alpha: 0.4),
-                    blurRadius: 8,
-                    offset: const Offset(0, 3),
-                  ),
-                ],
               ),
               child: _sending
                   ? const Padding(
-                      padding: EdgeInsets.all(12),
+                      padding: EdgeInsets.all(10),
                       child: CircularProgressIndicator(
-                          strokeWidth: 2, color: Colors.white),
+                          strokeWidth: 2.5, color: Colors.white),
                     )
-                  : const Icon(Icons.send_rounded,
-                      color: Colors.white, size: 20),
+                  : Icon(
+                      _textCtrl.text.isEmpty ? Icons.add_rounded : Icons.send_rounded,
+                      color: Colors.white,
+                      size: 20),
             ),
           ),
         ],
