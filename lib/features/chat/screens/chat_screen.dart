@@ -521,7 +521,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       controller: _scrollCtrl,
       padding: const EdgeInsets.fromLTRB(12, 16, 12, 12),
       itemCount: _demoLocalMessages.length,
-      itemSpacing: 2,
       itemBuilder: (_, i) => Padding(
         padding: const EdgeInsets.symmetric(vertical: 4),
         child: _MessageBubble(
