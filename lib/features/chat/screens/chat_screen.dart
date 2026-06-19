@@ -677,9 +677,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                       )],
               ),
               child: _sending
-                  ? const Padding(
-                      padding: EdgeInsets.all(12),
-                      child: CircularProgressIndicator(
+                  ? Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: const CircularProgressIndicator(
                           strokeWidth: 2.5, color: Colors.white),
                     )
                   : Icon(
