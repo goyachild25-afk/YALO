@@ -527,8 +527,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   }
 
   Widget _buildDemoMessages(String currentUserId) {
-    _scrollToBottom();
     if (_demoLocalMessages.isEmpty) return _buildEmptyChat();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
     return ListView.builder(
       controller: _scrollCtrl,
       padding: const EdgeInsets.fromLTRB(12, 16, 12, 12),
@@ -558,7 +558,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       error: (e, _) => Center(child: Text('Error: $e')),
       data: (messages) {
         if (messages.isEmpty) return _buildEmptyChat();
-        _scrollToBottom();
+        WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
         return ListView.builder(
           controller: _scrollCtrl,
           padding: const EdgeInsets.fromLTRB(12, 16, 12, 12),
