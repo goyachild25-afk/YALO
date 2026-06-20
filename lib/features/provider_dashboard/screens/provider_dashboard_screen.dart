@@ -379,8 +379,12 @@ class ProviderDashboardScreen extends ConsumerWidget {
               loading: () => const _BookingsSkeletonList(),
               error: (e, _) => Center(child: Text('Error: $e')),
               data: (bookings) {
-                if (bookings.isEmpty) return _buildEmptyBookings();
-                final list = bookings.take(10).toList();
+                // Filter out completed and rejected bookings
+                final activeBookings = bookings
+                    .where((b) => b['status'] != 'completed' && b['status'] != 'rejected')
+                    .toList();
+                if (activeBookings.isEmpty) return _buildEmptyBookings();
+                final list = activeBookings.take(10).toList();
                 return Column(
                   children: list.asMap().entries.map((entry) =>
                     _StaggeredCard(

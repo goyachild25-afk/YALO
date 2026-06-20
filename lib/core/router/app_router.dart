@@ -110,8 +110,11 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       if (!isLoggedIn && !isPublic) return '/login';
 
-      // Tras login/onboarding → redirige según rol
-      if (isLoggedIn && (path == '/login' || path == '/onboarding' || path == '/')) {
+      // SplashScreen (/) handles its own navigation — don't redirect from it
+      if (path == '/') return null;
+
+      // Tras login/onboarding (pero no /) → redirige según rol
+      if (isLoggedIn && (path == '/login' || path == '/onboarding')) {
         if (userRole == UserRole.provider) return '/dashboard';
         return '/home';
       }
