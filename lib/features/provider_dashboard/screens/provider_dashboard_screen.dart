@@ -213,7 +213,7 @@ class _ActivityMapSectionState extends State<_ActivityMapSection>
               animation: _pulseCtrl,
               builder: (context, _) => CustomPaint(
                 painter: _DRMapPainter(counts, _pulseCtrl.value),
-                size: Size(MediaQuery.of(context).size.width - 40, 155),
+                size: Size(MediaQuery.of(context).size.width - 40, 280),
               ),
             ),
           ),
