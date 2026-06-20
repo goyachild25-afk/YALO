@@ -1,9 +1,10 @@
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:geolocator/geolocator.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/supabase_service.dart';
 import '../../../core/services/demo_provider.dart';
@@ -12,146 +13,8 @@ import '../../../features/auth/providers/auth_provider.dart';
 import '../../providers_list/providers/providers_list_provider.dart';
 import '../screens/provider_services_screen.dart';
 
-// ── Posiciones geográficas aproximadas de provincias RD (grid normalizado 0-1) ─
-const Map<String, (double, double)> _drProvincePositions = {
-  'Distrito Nacional':       (0.555, 0.585),
-  'Santo Domingo':           (0.540, 0.600),
-  'Santiago':                (0.353, 0.202),
-  'La Vega':                 (0.400, 0.294),
-  'Puerto Plata':            (0.358, 0.065),
-  'San Cristóbal':           (0.511, 0.617),
-  'San Pedro de Macorís':    (0.724, 0.601),
-  'La Romana':               (0.811, 0.613),
-  'Barahona':                (0.250, 0.702),
-  'San Juan':                (0.216, 0.460),
-  'Azua':                    (0.348, 0.605),
-  'Samaná':                  (0.714, 0.298),
-  'Duarte':                  (0.537, 0.310),
-  'Monte Cristi':            (0.105, 0.036),
-  'Hato Mayor':              (0.735, 0.480),
-  'Espaillat':               (0.429, 0.133),
-  'La Altagracia':           (0.919, 0.536),
-  'Monte Plata':             (0.597, 0.456),
-  'Peravia':                 (0.452, 0.673),
-  'Monseñor Nouel':          (0.439, 0.415),
-  'Sánchez Ramírez':         (0.500, 0.359),
-  'Elías Piña':              (0.089, 0.431),
-  'Valverde':                (0.276, 0.141),
-  'Hermanas Mirabal':        (0.513, 0.181),
-  'Dajabón':                 (0.092, 0.141),
-  'Santiago Rodríguez':      (0.145, 0.181),
-  'Baoruco':                 (0.171, 0.585),
-  'Independencia':           (0.039, 0.585),
-  'Pedernales':              (0.092, 0.786),
-  'María Trinidad Sánchez':  (0.566, 0.181),
-  'El Seibo':                (0.803, 0.464),
-};
-
 // ── Mapa de actividad de RD ───────────────────────────────────────────────────
 
-class _DRMapPainter extends CustomPainter {
-  final Map<String, int> counts;
-  final double pulseValue; // 0..1
-
-  const _DRMapPainter(this.counts, this.pulseValue);
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    // Fondo oscuro tipo mapa
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        Rect.fromLTWH(0, 0, size.width, size.height),
-        const Radius.circular(0),
-      ),
-      Paint()..color = const Color(0xFF0B1929),
-    );
-
-    // Cuadrícula sutil
-    final gridPaint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.04)
-      ..strokeWidth = 1;
-    const step = 24.0;
-    for (double x = 0; x < size.width; x += step) {
-      canvas.drawLine(Offset(x, 0), Offset(x, size.height), gridPaint);
-    }
-    for (double y = 0; y < size.height; y += step) {
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), gridPaint);
-    }
-
-    // Borde costero aproximado (línea simple que rodea RD)
-    final coastPaint = Paint()
-      ..color = AppColors.primary.withValues(alpha: 0.22)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.5;
-    final coastPath = Path()
-      ..moveTo(size.width * 0.04, size.height * 0.55)
-      ..quadraticBezierTo(size.width * 0.10, size.height * 0.30,
-          size.width * 0.20, size.height * 0.15)
-      ..quadraticBezierTo(size.width * 0.38, size.height * 0.02,
-          size.width * 0.62, size.height * 0.04)
-      ..quadraticBezierTo(size.width * 0.80, size.height * 0.08,
-          size.width * 0.96, size.height * 0.42)
-      ..quadraticBezierTo(size.width * 0.98, size.height * 0.62,
-          size.width * 0.92, size.height * 0.72)
-      ..quadraticBezierTo(size.width * 0.72, size.height * 0.88,
-          size.width * 0.52, size.height * 0.92)
-      ..quadraticBezierTo(size.width * 0.30, size.height * 0.95,
-          size.width * 0.10, size.height * 0.82)
-      ..quadraticBezierTo(size.width * 0.02, size.height * 0.72,
-          size.width * 0.04, size.height * 0.55);
-    canvas.drawPath(coastPath, coastPaint);
-
-    // Provincias
-    for (final entry in _drProvincePositions.entries) {
-      final name = entry.key;
-      final (nx, ny) = entry.value;
-      final x = nx * size.width;
-      final y = ny * size.height;
-      final count = counts[name] ?? 0;
-      final isActive = count > 0;
-
-      if (isActive) {
-        // Halo pulsante
-        final pulse = (1.0 + math.sin(pulseValue * 2 * math.pi) * 0.4);
-        final haloR = (8.0 + count * 2.0) * pulse;
-        canvas.drawCircle(
-          Offset(x, y), haloR,
-          Paint()..color = AppColors.primary.withValues(alpha: 0.12),
-        );
-        // Anillo
-        canvas.drawCircle(
-          Offset(x, y), 7.0 + count.toDouble(),
-          Paint()
-            ..color = AppColors.primary.withValues(alpha: 0.35)
-            ..style = PaintingStyle.stroke
-            ..strokeWidth = 1.5,
-        );
-        // Núcleo
-        canvas.drawCircle(
-          Offset(x, y), 5.0,
-          Paint()..color = AppColors.primary,
-        );
-        // Punto secundario para indicar múltiples solicitudes
-        if (count > 1) {
-          canvas.drawCircle(
-            Offset(x + 5, y - 5), 4,
-            Paint()..color = AppColors.error,
-          );
-        }
-      } else {
-        // Provincia inactiva — punto pequeño
-        canvas.drawCircle(
-          Offset(x, y), 2.5,
-          Paint()..color = Colors.white.withValues(alpha: 0.18),
-        );
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(_DRMapPainter old) =>
-      old.counts != counts || old.pulseValue != pulseValue;
-}
 
 // ── Sección del mapa de actividad ─────────────────────────────────────────────
 
@@ -208,14 +71,9 @@ class _ActivityMapSectionState extends State<_ActivityMapSection>
         const SizedBox(height: 10),
         ClipRRect(
           borderRadius: BorderRadius.circular(16),
-          child: RepaintBoundary(
-            child: AnimatedBuilder(
-              animation: _pulseCtrl,
-              builder: (context, _) => CustomPaint(
-                painter: _DRMapPainter(counts, _pulseCtrl.value),
-                size: Size(MediaQuery.of(context).size.width - 40, 280),
-              ),
-            ),
+          child: SizedBox(
+            height: 280,
+            child: _UserLocationMap(requests: widget.requests),
           ),
         ),
         if (sorted.isNotEmpty) ...[
@@ -1382,5 +1240,115 @@ class _ProviderBottomNav extends ConsumerWidget {
         ),
       ],
     );
+  }
+}
+
+// ── User location map with Google Maps ──────────────────────────────────────
+class _UserLocationMap extends ConsumerStatefulWidget {
+  final List<Map<String, dynamic>> requests;
+  const _UserLocationMap({required this.requests});
+
+  @override
+  ConsumerState<_UserLocationMap> createState() => _UserLocationMapState();
+}
+
+class _UserLocationMapState extends ConsumerState<_UserLocationMap> {
+  GoogleMapController? _mapController;
+  LatLng? _userLocation;
+  Set<Marker> _markers = {};
+  bool _isLoadingLocation = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _getUserLocation();
+  }
+
+  Future<void> _getUserLocation() async {
+    try {
+      final permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        await Geolocator.requestPermission();
+      }
+
+      final position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+
+      if (mounted) {
+        setState(() {
+          _userLocation = LatLng(position.latitude, position.longitude);
+          _isLoadingLocation = false;
+          _updateMarkers();
+        });
+
+        // Animate camera to user location
+        _mapController?.animateCamera(
+          CameraUpdate.newCameraPosition(
+            CameraPosition(
+              target: _userLocation!,
+              zoom: 13,
+            ),
+          ),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _userLocation = const LatLng(18.7357, -70.1627); // Default: Santo Domingo
+          _isLoadingLocation = false;
+          _updateMarkers();
+        });
+      }
+    }
+  }
+
+  void _updateMarkers() {
+    final markers = <Marker>{};
+
+    // User location marker
+    if (_userLocation != null) {
+      markers.add(
+        Marker(
+          markerId: const MarkerId('user'),
+          position: _userLocation!,
+          infoWindow: const InfoWindow(title: 'Mi ubicación'),
+          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
+        ),
+      );
+    }
+
+    setState(() => _markers = markers);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoadingLocation) {
+      return Container(
+        color: Colors.grey[100],
+        child: const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    return GoogleMap(
+      onMapCreated: (controller) => _mapController = controller,
+      initialCameraPosition: CameraPosition(
+        target: _userLocation ?? const LatLng(18.7357, -70.1627),
+        zoom: 13,
+      ),
+      markers: _markers,
+      myLocationEnabled: true,
+      myLocationButtonEnabled: true,
+      zoomControlsEnabled: true,
+      mapType: MapType.normal,
+    );
+  }
+
+  @override
+  void dispose() {
+    _mapController?.dispose();
+    super.dispose();
   }
 }
