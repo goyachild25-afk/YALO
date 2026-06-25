@@ -168,7 +168,9 @@ Future<bool> isOnboardingComplete(String userId) async {
       await prefs.setBool('$_kOnboardingDonePrefix$userId', true);
       return true;
     }
-  } catch (_) {}
+  } catch (e) {
+    print('⚠️ isOnboardingComplete($userId) error: $e');
+  }
 
   return false;
 }

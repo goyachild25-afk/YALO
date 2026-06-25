@@ -8,7 +8,7 @@
 --      20260611_bookings_dispatch.sql no llegó a aplicarse completa) ──────
 DROP POLICY IF EXISTS "View open requests" ON bookings;
 CREATE POLICY "View open requests" ON bookings
-  FOR SELECT TO authenticated
+  FOR SELECT TO authenticcated
   USING (provider_id IS NULL AND status = 'pending');
 
 DROP POLICY IF EXISTS "Accept open requests" ON bookings;
