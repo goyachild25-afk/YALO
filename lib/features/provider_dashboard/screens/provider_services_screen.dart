@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/supabase_service.dart';
 import '../../../core/services/demo_provider.dart';
-import '../../../shared/models/service_category_model.dart';
+import '../../onboarding_flow/providers/onboarding_provider.dart' show kServiceCategories;
 import '../../../shared/widgets/custom_button.dart';
 import '../../../shared/widgets/custom_text_field.dart';
 import '../../providers_list/models/service_provider_model.dart';
@@ -188,12 +188,12 @@ class _ServiceTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cat = serviceCategories
-        .where((c) => c.id == service.categoryId)
+    final cat = kServiceCategories
+        .where((c) => c['id'] == service.categoryId)
         .firstOrNull;
-    final color = cat?.color ?? AppColors.primary;
-    final bg = cat?.backgroundColor ?? AppColors.primaryLighter;
-    final emoji = cat?.emoji ?? '🔧';
+    const color = AppColors.primary;
+    const bg = AppColors.primaryLighter;
+    final emoji = cat?['emoji'] ?? '🔧';
 
     return Container(
       padding: const EdgeInsets.all(14),
@@ -300,7 +300,7 @@ class _AddServiceSheetState extends ConsumerState<_AddServiceSheet> {
   final _priceCtrl = TextEditingController();
   final _descCtrl = TextEditingController();
 
-  ServiceCategory? _selectedCategory;
+  Map<String, String>? _selectedCategory;
   PricingType _pricingType = PricingType.fixed;
   bool _isSaving = false;
 
@@ -335,8 +335,8 @@ class _AddServiceSheetState extends ConsumerState<_AddServiceSheet> {
 
         await SupabaseService.client.from('provider_services').insert({
           'provider_id': profile['id'],
-          'category_id': _selectedCategory!.id,
-          'category_name': _selectedCategory!.name,
+          'category_id': _selectedCategory!['id'],
+          'category_name': _selectedCategory!['name'],
           'pricing_type': _pricingType.name,
           'fixed_price': _pricingType == PricingType.fixed
               ? double.tryParse(_priceCtrl.text.replaceAll(',', ''))
@@ -425,11 +425,11 @@ class _AddServiceSheetState extends ConsumerState<_AddServiceSheet> {
               height: 42,
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
-                itemCount: serviceCategories.length,
+                itemCount: kServiceCategories.length,
                 separatorBuilder: (_, __) => const SizedBox(width: 8),
                 itemBuilder: (_, i) {
-                  final cat = serviceCategories[i];
-                  final isSelected = _selectedCategory?.id == cat.id;
+                  final cat = kServiceCategories[i];
+                  final isSelected = _selectedCategory?['id'] == cat['id'];
                   return GestureDetector(
                     onTap: () => setState(() => _selectedCategory = cat),
                     child: AnimatedContainer(
@@ -437,25 +437,31 @@ class _AddServiceSheetState extends ConsumerState<_AddServiceSheet> {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 12, vertical: 8),
                       decoration: BoxDecoration(
-                        color: isSelected ? cat.color : cat.backgroundColor,
+                        color: isSelected
+                            ? AppColors.primary
+                            : AppColors.primaryLighter,
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
-                          color: isSelected ? cat.color : Colors.transparent,
+                          color: isSelected
+                              ? AppColors.primary
+                              : Colors.transparent,
                           width: 1.5,
                         ),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Text(cat.emoji,
+                          Text(cat['emoji']!,
                               style: const TextStyle(fontSize: 14)),
                           const SizedBox(width: 6),
                           Text(
-                            cat.name.split(' ').first,
+                            cat['name']!.split(' ').first,
                             style: TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w600,
-                              color: isSelected ? Colors.white : cat.color,
+                              color: isSelected
+                                  ? Colors.white
+                                  : AppColors.primary,
                             ),
                           ),
                         ],

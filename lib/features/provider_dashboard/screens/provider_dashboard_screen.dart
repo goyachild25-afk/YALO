@@ -346,12 +346,12 @@ class _OpenRequestsWithMapState extends ConsumerState<_OpenRequestsWithMap> {
       // Categorías del prestador (para filtrar solicitudes por nicho)
       final services = await ref.read(myProviderServicesProvider.future);
       final categories = services
-          .where((s) => s.categoryName != null)
-          .map((s) => s.categoryName!.toLowerCase())
+          .where((s) => s.categoryName.isNotEmpty)
+          .map((s) => s.categoryName.toLowerCase())
           .toList();
       final catIds = services
-          .where((s) => s.categoryId != null)
-          .map((s) => s.categoryId!)
+          .where((s) => s.categoryId.isNotEmpty)
+          .map((s) => s.categoryId)
           .toList();
 
       if (mounted) {
