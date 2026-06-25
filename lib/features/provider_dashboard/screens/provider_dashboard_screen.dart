@@ -1272,14 +1272,15 @@ class _UserLocationMapState extends ConsumerState<_UserLocationMap> {
 
   Future<void> _getUserLocation() async {
     try {
-      final permission = await Geolocator.checkPermission();
+      final permission = await Geolocator.checkPermission()
+          .timeout(const Duration(seconds: 5));
       if (permission == LocationPermission.denied) {
-        await Geolocator.requestPermission();
+        await Geolocator.requestPermission().timeout(const Duration(seconds: 8));
       }
 
       final position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
-      );
+      ).timeout(const Duration(seconds: 8));
 
       if (mounted) {
         setState(() {

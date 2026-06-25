@@ -333,6 +333,27 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
           style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 12),
+        if (provider.services.isEmpty)
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: AppColors.warningLight,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Row(
+              children: [
+                Icon(Icons.info_outline, color: AppColors.warning, size: 20),
+                SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Este prestador todavía no ha configurado sus servicios. '
+                    'Intenta con otro prestador o vuelve más tarde.',
+                    style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ...provider.services.map(
           (service) => GestureDetector(
             onTap: () => setState(() => _selectedService = service),

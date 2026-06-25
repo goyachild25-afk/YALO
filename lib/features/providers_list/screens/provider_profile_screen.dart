@@ -356,10 +356,12 @@ class ProviderProfileScreen extends ConsumerWidget {
             children: [
               Expanded(
                 child: PrimaryButton(
-                  label: provider.isAvailable
-                      ? 'Solicitar servicio'
-                      : 'No disponible',
-                  onPressed: provider.isAvailable
+                  label: !provider.isAvailable
+                      ? 'No disponible'
+                      : provider.services.isEmpty
+                          ? 'Aún sin servicios configurados'
+                          : 'Solicitar servicio',
+                  onPressed: provider.isAvailable && provider.services.isNotEmpty
                       ? () => context.push('/booking/${provider.id}')
                       : null,
                 ),

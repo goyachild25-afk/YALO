@@ -534,6 +534,28 @@ class _BookingCard extends ConsumerWidget {
                   side: const BorderSide(color: AppColors.error),
                 ),
                 onPressed: () async {
+                  final confirmed = await showDialog<bool>(
+                    context: context,
+                    builder: (ctx) => AlertDialog(
+                      title: const Text('¿Cancelar solicitud?'),
+                      content: const Text(
+                        'Esta acción no se puede deshacer. El prestador será notificado.',
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.of(ctx).pop(false),
+                          child: const Text('No, mantener'),
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.of(ctx).pop(true),
+                          style: TextButton.styleFrom(foregroundColor: AppColors.error),
+                          child: const Text('Sí, cancelar'),
+                        ),
+                      ],
+                    ),
+                  );
+                  if (confirmed != true) return;
+
                   final isDemo = ref.read(demoModeProvider);
                   if (!isDemo) {
                     await SupabaseService.client
