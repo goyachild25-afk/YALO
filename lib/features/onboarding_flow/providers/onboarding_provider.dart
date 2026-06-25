@@ -1,5 +1,6 @@
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/services/supabase_service.dart';
+import '../../../core/services/logging_service.dart';
 
 // ─── Provincias de República Dominicana (32) ──────────────────────────────────
 const List<String> kProvinciasRD = [
@@ -147,14 +148,15 @@ const String _kOnboardingDonePrefix = 'onboarding_done_';
 const String _kVerificationSubmittedPrefix = 'verification_submitted_';
 
 Future<bool> isOnboardingComplete(String userId) async {
-  // Check local cache first (fast)
-  final prefs = await SharedPreferences.getInstance();
-  if (prefs.getBool('$_kOnboardingDonePrefix$userId') ?? false) {
-    return true;
-  }
-
-  // If not in cache, check Supabase (source of truth for web)
   try {
+    // Check local cache first (fast)
+    final prefs = await SharedPreferences.getInstance();
+    if (prefs.getBool('$_kOnboardingDonePrefix$userId') ?? false) {
+      LoggingService.info('Onboarding status from cache: true ($userId)');
+      return true;
+    }
+
+    // If not in cache, check Supabase (source of truth for web)
     final profile = await SupabaseService.client
         .from('profiles')
         .select('id')
@@ -166,13 +168,17 @@ Future<bool> isOnboardingComplete(String userId) async {
     if (profile != null) {
       // Update local cache for next time
       await prefs.setBool('$_kOnboardingDonePrefix$userId', true);
+      LoggingService.info('Onboarding status from Supabase: true ($userId)');
       return true;
     }
-  } catch (e) {
-    print('⚠️ isOnboardingComplete($userId) error: $e');
-  }
 
-  return false;
+    LoggingService.info('Onboarding status: false ($userId)');
+    return false;
+  } catch (e, st) {
+    LoggingService.error('isOnboardingComplete failed for user $userId', e, st);
+    LoggingService.addError('onboarding_provider', e, st);
+    return false;
+  }
 }
 
 Future<void> markOnboardingComplete(String userId) async {
