@@ -11,6 +11,7 @@ import '../../../core/services/demo_provider.dart';
 import '../../../core/services/payment_service.dart';
 import '../../../features/auth/providers/auth_provider.dart';
 import '../../providers_list/providers/providers_list_provider.dart';
+import '../../../shared/models/service_category_model.dart';
 import '../screens/provider_services_screen.dart';
 
 // ── Mapa de actividad de RD ───────────────────────────────────────────────────
@@ -368,13 +369,19 @@ class _OpenRequestsWithMapState extends ConsumerState<_OpenRequestsWithMap> {
 
   bool _matchesCategory(Map<String, dynamic> request) {
     if (_categoryNames.isEmpty && _categoryIds.isEmpty) return true;
-    // Coincidencia exacta por category_id (más confiable)
     final catId = request['category_id'] as String? ?? '';
-    if (catId.isNotEmpty && _categoryIds.contains(catId)) return true;
-    // Fallback: coincidencia por nombre
-    final svcName = (request['service_name'] as String? ?? '').toLowerCase();
-    if (svcName.isEmpty) return true;
-    return _categoryNames.any((cat) => svcName.contains(cat) || cat.contains(svcName));
+    if (catId.isEmpty) return true;
+
+    // Coincidencia directa (solicitud directa a un prestador ya usa el id granular)
+    if (_categoryIds.contains(catId)) return true;
+
+    // Solicitud "broadcast" creada desde la categoría amplia que ve el cliente
+    // (ej. 'maintenance') → expandir al set de categorías granulares reales
+    // que sí usan los prestadores antes de comparar.
+    final granular = broadToGranularCategoryIds[catId];
+    if (granular != null && granular.any(_categoryIds.contains)) return true;
+
+    return false;
   }
 
   Future<void> _acceptRequest(Map<String, dynamic> booking) async {

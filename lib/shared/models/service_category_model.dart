@@ -95,3 +95,29 @@ final List<ServiceCategory> serviceCategories = [
     backgroundColor: const Color(0xFFDBEAFE),
   ),
 ];
+
+// ── Mapeo categoría amplia (navegación del cliente) → categorías granulares
+//    (las que usan los prestadores en provider_services.category_id) ─────────
+// El cliente navega/solicita por estas 8 categorías amplias, pero cada
+// prestador define sus servicios con las categorías granulares de
+// kServiceCategories (ver onboarding_provider.dart). Sin este mapeo, una
+// solicitud de "Mantenimiento" o "Jardín" nunca encuentra prestadores
+// elegibles, porque los IDs no coinciden directamente.
+const Map<String, List<String>> broadToGranularCategoryIds = {
+  'cleaning': ['home_cleaning', 'office_cleaning'],
+  'garden': ['gardening'],
+  'pets': ['pet_care'],
+  'vehicles': ['car_wash'],
+  'maintenance': [
+    'plumbing',
+    'electrical',
+    'painting',
+    'carpentry',
+    'ac_service',
+    'pest_control',
+    'appliance_repair',
+  ],
+  'caregiving': ['elderly_care', 'babysitting'],
+  'cooking': ['cooking'],
+  'moving': ['moving'],
+};
