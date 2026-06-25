@@ -30,6 +30,19 @@
   <!-- Google Maps JS API — requerido por google_maps_flutter_web -->
   <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyA9IYxYmPtlhQgRgeJTUUM-RK1IT0o30zw" defer></script>
 
+  <!-- Auto-actualización: si hay un Service Worker nuevo, recarga una sola vez
+       para que los usuarios reciban el último deploy sin limpiar caché a mano -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      let refreshing = false;
+      navigator.serviceWorker.addEventListener('controllerchange', function() {
+        if (refreshing) return;
+        refreshing = true;
+        window.location.reload();
+      });
+    }
+  </script>
+
   <!-- PWA install prompt capture -->
   <script>
     window.deferredPrompt = null;
