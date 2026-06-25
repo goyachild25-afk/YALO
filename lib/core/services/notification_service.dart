@@ -28,15 +28,18 @@ class NotificationService {
   /// Solicitar permiso y guardar token FCM del usuario logueado.
   static Future<void> registerUser(String userId) async {
     try {
-      final settings = await FirebaseMessaging.instance.requestPermission(
-        alert: true, badge: true, sound: true,
-      );
+      final settings = await FirebaseMessaging.instance
+          .requestPermission(alert: true, badge: true, sound: true)
+          .timeout(const Duration(seconds: 8));
       if (settings.authorizationStatus == AuthorizationStatus.denied) return;
 
       final token = kIsWeb
-          ? await FirebaseMessaging.instance.getToken(
-              vapidKey: AppFirebaseOptions.webVapidKey)
-          : await FirebaseMessaging.instance.getToken();
+          ? await FirebaseMessaging.instance
+              .getToken(vapidKey: AppFirebaseOptions.webVapidKey)
+              .timeout(const Duration(seconds: 8))
+          : await FirebaseMessaging.instance
+              .getToken()
+              .timeout(const Duration(seconds: 8));
 
       if (token != null) await _upsertToken(userId, token);
 
@@ -63,14 +66,19 @@ class NotificationService {
   /// Eliminar token cuando el usuario cierra sesión.
   static Future<void> unregisterUser(String userId) async {
     try {
-      final token = await FirebaseMessaging.instance.getToken();
+      final token = await FirebaseMessaging.instance
+          .getToken()
+          .timeout(const Duration(seconds: 5));
       if (token == null) return;
       await SupabaseService.client
           .from('device_tokens')
           .delete()
           .eq('user_id', userId)
-          .eq('token', token);
-      await FirebaseMessaging.instance.deleteToken();
+          .eq('token', token)
+          .timeout(const Duration(seconds: 5));
+      await FirebaseMessaging.instance
+          .deleteToken()
+          .timeout(const Duration(seconds: 5));
     } catch (e) {
       debugPrint('FCM unregisterUser error: $e');
     }
