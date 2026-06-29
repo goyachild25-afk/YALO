@@ -45,7 +45,13 @@ class SupabaseService {
   }
 
   static Future<void> resetPassword(String email) async {
-    await client.auth.resetPasswordForEmail(email);
+    // Sin esto, Supabase usa el "Site URL" del dashboard como destino del
+    // enlace de recuperación, que normalmente no incluye ninguna ruta de la
+    // app — el resultado es una URL sin hash que go_router no puede
+    // resolver (404 "Página no encontrada"). Construirlo a partir de
+    // Uri.base evita hardcodear el dominio y funciona igual en local y prod.
+    final redirectTo = '${Uri.base.origin}${Uri.base.path}#/reset-password';
+    await client.auth.resetPasswordForEmail(email, redirectTo: redirectTo);
   }
 
   // Storage

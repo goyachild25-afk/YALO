@@ -9,6 +9,7 @@ import '../../features/auth/screens/onboarding_screen.dart';
 import '../../features/auth/screens/login_screen.dart';
 import '../../features/auth/screens/register_screen.dart';
 import '../../features/auth/screens/forgot_password_screen.dart';
+import '../../features/auth/screens/reset_password_screen.dart';
 import '../../features/home/screens/home_screen.dart';
 import '../../features/providers_list/screens/providers_list_screen.dart';
 import '../../features/providers_list/screens/provider_profile_screen.dart';
@@ -103,6 +104,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       final publicPaths = [
         '/', '/onboarding', '/login', '/register',
         '/setup-client', '/setup-provider', '/verify-email', '/forgot-password',
+        '/reset-password',
       ];
       final isPublic = publicPaths.contains(path);
 
@@ -151,6 +153,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/forgot-password',
         pageBuilder: (_, state) =>
             _slidePage(state.pageKey, const ForgotPasswordScreen()),
+      ),
+      GoRoute(
+        path: '/reset-password',
+        pageBuilder: (_, state) =>
+            _fadePage(state.pageKey, const ResetPasswordScreen()),
       ),
       GoRoute(
         path: '/register',
