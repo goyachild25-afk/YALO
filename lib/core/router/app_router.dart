@@ -135,13 +135,31 @@ final routerProvider = Provider<GoRouter>((ref) {
         return '/home';
       }
 
-      // Guarda cruzada: prestadores no acceden al home de cliente
-      if (isLoggedIn && path == '/home' && userRole != UserRole.client) {
+      // Guarda cruzada: prestadores no acceden al home de cliente.
+      // userRole != null es obligatorio aquí: mientras el perfil del usuario
+      // todavía está cargando (justo tras el login, antes de que
+      // currentUserProvider resuelva), userRole es null, y null != client
+      // también es true — sin este chequeo, /home redirige a /dashboard,
+      // que a su vez redirige de vuelta a /home (misma razón, en espejo),
+      // formando un loop infinito que GoRouter corta mostrando su
+      // errorBuilder genérico ("Página no encontrada"). Confirmado en vivo
+      // instrumentando el callback con logging: el ciclo se repetía
+      // exactamente así, /login -> /home -> /dashboard -> /home, mientras
+      // userRole seguía en null.
+      if (isLoggedIn &&
+          userRole != null &&
+          path == '/home' &&
+          userRole != UserRole.client) {
         return userRole == UserRole.admin ? '/admin' : '/dashboard';
       }
 
-      // Guarda cruzada: clientes (y admins) no acceden al dashboard de prestador
-      if (isLoggedIn && path == '/dashboard' && userRole != UserRole.provider) {
+      // Guarda cruzada: clientes (y admins) no acceden al dashboard de
+      // prestador. Mismo motivo que arriba: sin userRole != null, esto
+      // forma la otra mitad del loop infinito /home <-> /dashboard.
+      if (isLoggedIn &&
+          userRole != null &&
+          path == '/dashboard' &&
+          userRole != UserRole.provider) {
         return userRole == UserRole.admin ? '/admin' : '/home';
       }
 
