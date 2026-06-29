@@ -570,14 +570,34 @@ final adminAllUsersProvider =
 
 /// Reservas (cliente, prestador, id) hechas o recibidas por un usuario — para
 /// el detalle de usuario en el panel admin.
+///
+/// `bookings.provider_id` referencia `provider_profiles.id`, NO
+/// `profiles.id` — por eso primero hay que resolver el provider_profiles.id
+/// del usuario (si tiene uno) antes de poder buscar sus reservas como
+/// prestador; de lo contrario esta consulta siempre devuelve vacío para
+/// cuentas con rol "provider".
 final adminUserBookingsProvider =
     FutureProvider.autoDispose.family<List<Map<String, dynamic>>, String>((ref, userId) async {
   if (ref.watch(demoModeProvider)) return [];
   try {
+    String? providerProfileId;
+    try {
+      final pp = await SupabaseService.client
+          .from('provider_profiles')
+          .select('id')
+          .eq('user_id', userId)
+          .maybeSingle();
+      providerProfileId = pp?['id'] as String?;
+    } catch (_) {}
+
+    final orFilter = providerProfileId != null
+        ? 'client_id.eq.$userId,provider_id.eq.$providerProfileId'
+        : 'client_id.eq.$userId';
+
     final data = await SupabaseService.client
         .from('bookings')
         .select('id, service_name, status, agreed_price, created_at, client_id, provider_id')
-        .or('client_id.eq.$userId,provider_id.eq.$userId')
+        .or(orFilter)
         .order('created_at', ascending: false)
         .limit(20);
     return (data as List<dynamic>).cast<Map<String, dynamic>>();
