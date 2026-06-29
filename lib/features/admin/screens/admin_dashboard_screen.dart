@@ -1623,7 +1623,7 @@ class _CategoriesSectionState extends ConsumerState<_CategoriesSection> {
                 dense: true,
                 value: isActive,
                 onChanged: _busy.contains(id) ? null : (_) => _toggle(cat),
-                activeThumbColor: AppColors.success,
+                activeColor: AppColors.success,
                 title: Text('$emoji  $name',
                     style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
                 subtitle: Text(isActive ? 'Visible para clientes' : 'Oculta',
