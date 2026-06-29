@@ -115,18 +115,19 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       // Tras login/onboarding (pero no /) → redirige según rol
       if (isLoggedIn && (path == '/login' || path == '/onboarding')) {
+        if (userRole == UserRole.admin) return '/admin';
         if (userRole == UserRole.provider) return '/dashboard';
         return '/home';
       }
 
       // Guarda cruzada: prestadores no acceden al home de cliente
-      if (isLoggedIn && path == '/home' && userRole == UserRole.provider) {
-        return '/dashboard';
+      if (isLoggedIn && path == '/home' && userRole != UserRole.client) {
+        return userRole == UserRole.admin ? '/admin' : '/dashboard';
       }
 
-      // Guarda cruzada: clientes no acceden al dashboard de prestador
-      if (isLoggedIn && path == '/dashboard' && userRole == UserRole.client) {
-        return '/home';
+      // Guarda cruzada: clientes (y admins) no acceden al dashboard de prestador
+      if (isLoggedIn && path == '/dashboard' && userRole != UserRole.provider) {
+        return userRole == UserRole.admin ? '/admin' : '/home';
       }
 
       return null;

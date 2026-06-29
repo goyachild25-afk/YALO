@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_constants.dart';
 import '../../../core/services/supabase_service.dart';
 import '../../../core/services/demo_provider.dart';
 import '../providers/admin_provider.dart';
@@ -59,7 +60,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen>
   @override
   void initState() {
     super.initState();
-    _tab = TabController(length: 5, vsync: this);
+    _tab = TabController(length: 6, vsync: this);
   }
 
   @override
@@ -74,6 +75,8 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen>
     ref.invalidate(adminDisputesProvider);
     ref.invalidate(adminRecentUsersProvider);
     ref.invalidate(adminRecentBookingsProvider);
+    ref.invalidate(adminFinanceDataProvider);
+    ref.invalidate(adminServiceCategoriesProvider);
   }
 
   @override
@@ -167,6 +170,7 @@ class _AdminBody extends ConsumerWidget {
             ),
             const Tab(text: 'Usuarios'),
             const Tab(text: 'Reservas'),
+            const Tab(text: 'Finanzas'),
           ],
         ),
       ),
@@ -178,6 +182,7 @@ class _AdminBody extends ConsumerWidget {
           _DisputesTab(),
           _UsersTab(),
           _BookingsTab(),
+          _FinanceTab(),
         ],
       ),
     );
@@ -259,6 +264,34 @@ class _SummaryTab extends ConsumerWidget {
 
             // ── Revenue ────────────────────────────────────────────────────
             _RevenueCard(revenue: stats.monthlyRevenue),
+            const SizedBox(height: 16),
+
+            // ── Eficiencia operativa ───────────────────────────────────────
+            const _SectionTitle('Eficiencia operativa'),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: _RateCard(
+                    label: 'Tasa de finalización',
+                    rate: stats.completionRate,
+                    color: AppColors.success,
+                    icon: Icons.task_alt_outlined,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _RateCard(
+                    label: 'Cancelación / rechazo',
+                    rate: stats.cancellationRate,
+                    color: stats.cancellationRate > 0.2
+                        ? AppColors.error
+                        : AppColors.warning,
+                    icon: Icons.cancel_outlined,
+                  ),
+                ),
+              ],
+            ),
             const SizedBox(height: 20),
 
             // ── Acciones rápidas ───────────────────────────────────────────
@@ -441,11 +474,11 @@ class _VerificationCard extends StatelessWidget {
     final province = profile['province'] as String? ?? '';
     final city = profile['city'] as String? ?? '';
     final email = profile['email'] as String? ?? '';
-    final cedula = req['cedula_number'] as String? ?? '—';
+    final cedula = req['id_number'] as String? ?? '—';
     final submittedAt = DateTime.tryParse((req['submitted_at'] as String?) ?? '');
 
-    final frontUrl = req['cedula_front_url'] as String?;
-    final backUrl = req['cedula_back_url'] as String?;
+    final frontUrl = req['id_front_url'] as String?;
+    final backUrl = req['id_back_url'] as String?;
     final selfieUrl = req['selfie_url'] as String?;
 
     return Container(
@@ -968,11 +1001,99 @@ class _PartyChip extends StatelessWidget {
 // ═════════════════════════════════════════════════════════════════════════════
 // TAB 4 — USUARIOS
 // ═════════════════════════════════════════════════════════════════════════════
-class _UsersTab extends ConsumerWidget {
+class _UsersTab extends ConsumerStatefulWidget {
   const _UsersTab();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_UsersTab> createState() => _UsersTabState();
+}
+
+class _UsersTabState extends ConsumerState<_UsersTab> {
+  final Set<String> _busy = {};
+
+  Future<void> _toggleActive(Map<String, dynamic> user) async {
+    final id = user['id'] as String;
+    final isActive = user['is_active'] as bool? ?? true;
+    final name = user['full_name'] as String? ?? 'este usuario';
+    final confirmed = await _showConfirmDialog(
+      context: context,
+      title: isActive ? 'Suspender usuario' : 'Reactivar usuario',
+      message: isActive
+          ? '¿Suspender a $name? No podrá iniciar sesión ni usar la app hasta que lo reactives.'
+          : '¿Reactivar a $name? Podrá volver a iniciar sesión y usar la app.',
+      confirmLabel: isActive ? 'Suspender' : 'Reactivar',
+      confirmColor: isActive ? AppColors.error : AppColors.success,
+    );
+    if (!confirmed) return;
+
+    setState(() => _busy.add(id));
+    try {
+      if (!ref.read(demoModeProvider)) {
+        await SupabaseService.client
+            .from('profiles')
+            .update({'is_active': !isActive}).eq('id', id);
+        ref.invalidate(adminRecentUsersProvider);
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(isActive ? '🚫 Usuario suspendido' : '✅ Usuario reactivado'),
+          backgroundColor: isActive ? AppColors.error : AppColors.success,
+        ));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e'), backgroundColor: AppColors.error),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _busy.remove(id));
+    }
+  }
+
+  Future<void> _toggleAdmin(Map<String, dynamic> user) async {
+    final id = user['id'] as String;
+    final role = user['role'] as String? ?? 'client';
+    final isAdmin = role == 'admin';
+    final name = user['full_name'] as String? ?? 'este usuario';
+    final confirmed = await _showConfirmDialog(
+      context: context,
+      title: isAdmin ? 'Quitar admin' : 'Hacer admin',
+      message: isAdmin
+          ? '¿Quitar el rol de administrador a $name? Quedará como cliente.'
+          : '¿Dar acceso de administrador a $name? Podrá ver y gestionar todo el panel admin.',
+      confirmLabel: isAdmin ? 'Quitar admin' : 'Hacer admin',
+      confirmColor: isAdmin ? AppColors.warning : AppColors.primary,
+    );
+    if (!confirmed) return;
+
+    setState(() => _busy.add(id));
+    try {
+      if (!ref.read(demoModeProvider)) {
+        await SupabaseService.client
+            .from('profiles')
+            .update({'role': isAdmin ? 'client' : 'admin'}).eq('id', id);
+        ref.invalidate(adminRecentUsersProvider);
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(isAdmin ? 'Rol de admin removido' : '✅ Ahora es administrador'),
+          backgroundColor: AppColors.primary,
+        ));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e'), backgroundColor: AppColors.error),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _busy.remove(id));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final async = ref.watch(adminRecentUsersProvider);
 
     return async.when(
@@ -1076,33 +1197,60 @@ class _UsersTab extends ConsumerWidget {
                               style: const TextStyle(fontSize: 11, color: AppColors.textHint)),
                       ],
                     ),
-                    trailing: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: roleColor.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(20),
+                    trailing: _busy.contains(u['id'])
+                        ? const SizedBox(
+                            width: 18, height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2))
+                        : Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 8, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: roleColor.withValues(alpha: 0.1),
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    child: Text(roleLabel,
+                                        style: TextStyle(
+                                            fontSize: 10,
+                                            color: roleColor,
+                                            fontWeight: FontWeight.w700)),
+                                  ),
+                                  if (createdAt != null) ...[
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      DateFormat('dd/MM/yy').format(createdAt),
+                                      style: const TextStyle(
+                                          fontSize: 10, color: AppColors.textHint),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                              PopupMenuButton<String>(
+                                icon: const Icon(Icons.more_vert,
+                                    size: 18, color: AppColors.textHint),
+                                onSelected: (action) {
+                                  if (action == 'active') _toggleActive(u);
+                                  if (action == 'admin') _toggleAdmin(u);
+                                },
+                                itemBuilder: (_) => [
+                                  PopupMenuItem(
+                                    value: 'active',
+                                    child: Text(isActive ? 'Suspender' : 'Reactivar'),
+                                  ),
+                                  PopupMenuItem(
+                                    value: 'admin',
+                                    child: Text(isAdmin ? 'Quitar admin' : 'Hacer admin'),
+                                  ),
+                                ],
+                              ),
+                            ],
                           ),
-                          child: Text(roleLabel,
-                              style: TextStyle(
-                                  fontSize: 10,
-                                  color: roleColor,
-                                  fontWeight: FontWeight.w700)),
-                        ),
-                        if (createdAt != null) ...[
-                          const SizedBox(height: 2),
-                          Text(
-                            DateFormat('dd/MM/yy').format(createdAt),
-                            style: const TextStyle(
-                                fontSize: 10, color: AppColors.textHint),
-                          ),
-                        ],
-                      ],
-                    ),
                     isThreeLine: city.isNotEmpty,
                   );
                 },
@@ -1174,7 +1322,7 @@ class _BookingsTab extends ConsumerWidget {
                   final providerName = provider?['full_name'] as String? ??
                       b['provider_id'] as String? ?? '—';
                   final status = b['status'] as String?;
-                  final amount = (b['amount'] as num?)?.toDouble();
+                  final amount = (b['agreed_price'] as num?)?.toDouble();
                   final serviceName = b['service_name'] as String? ?? '—';
                   final createdAt = DateTime.tryParse(
                       (b['created_at'] as String?) ?? '');
@@ -1279,8 +1427,320 @@ class _BookingsTab extends ConsumerWidget {
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
+// TAB 6 — FINANZAS
+// ═════════════════════════════════════════════════════════════════════════════
+class _FinanceTab extends ConsumerWidget {
+  const _FinanceTab();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final async = ref.watch(adminFinanceDataProvider);
+
+    return async.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, _) => _ErrorState(
+          message: e.toString(),
+          onRetry: () => ref.invalidate(adminFinanceDataProvider)),
+      data: (finance) {
+        final noFinanceData = finance.weeklyTrend.isEmpty && finance.byService.isEmpty;
+
+        final maxWeekly = finance.weeklyTrend.isEmpty
+            ? 0.0
+            : finance.weeklyTrend.map((w) => w.total).reduce((a, b) => a > b ? a : b);
+        final maxService = finance.byService.isEmpty
+            ? 0.0
+            : finance.byService.map((s) => s.total).reduce((a, b) => a > b ? a : b);
+        final maxProvider = finance.topProviders.isEmpty
+            ? 0.0
+            : finance.topProviders.map((p) => p.total).reduce((a, b) => a > b ? a : b);
+
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (noFinanceData) ...[
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: AppColors.infoLight,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Row(
+                    children: [
+                      Icon(Icons.info_outline, size: 16, color: AppColors.info),
+                      SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Aún no hay reservas completadas en los últimos 90 días.',
+                          style: TextStyle(fontSize: 12, color: AppColors.info),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+              ],
+              const _SectionTitle('Tendencia de ingresos (últimas 8 semanas)'),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.divider),
+                ),
+                child: Column(
+                  children: finance.weeklyTrend
+                      .map((w) => _BarRow(
+                            label: DateFormat('dd/MM').format(w.weekStart),
+                            value: w.total,
+                            maxValue: maxWeekly,
+                            color: AppColors.primary,
+                          ))
+                      .toList(),
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              const _SectionTitle('Ingresos por servicio (últimos 90 días)'),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.divider),
+                ),
+                child: Column(
+                  children: finance.byService
+                      .map((s) => _BarRow(
+                            label: '${s.name} (${s.count})',
+                            value: s.total,
+                            maxValue: maxService,
+                            color: const Color(0xFF7C3AED),
+                          ))
+                      .toList(),
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              const _SectionTitle('Top 5 prestadores por ingresos'),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.divider),
+                ),
+                child: Column(
+                  children: finance.topProviders
+                      .map((p) => _BarRow(
+                            label: '${p.name} (${p.jobs} trabajos)',
+                            value: p.total,
+                            maxValue: maxProvider,
+                            color: AppColors.success,
+                          ))
+                      .toList(),
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              const _SectionTitle('Categorías de servicio'),
+              const SizedBox(height: 12),
+              const _CategoriesSection(),
+              const SizedBox(height: 20),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// Lista de categorías de servicio con toggle de activo/inactivo.
+class _CategoriesSection extends ConsumerStatefulWidget {
+  const _CategoriesSection();
+
+  @override
+  ConsumerState<_CategoriesSection> createState() => _CategoriesSectionState();
+}
+
+class _CategoriesSectionState extends ConsumerState<_CategoriesSection> {
+  final Set<String> _busy = {};
+
+  Future<void> _toggle(Map<String, dynamic> cat) async {
+    final id = cat['id'] as String;
+    final isActive = cat['is_active'] as bool? ?? true;
+
+    setState(() => _busy.add(id));
+    try {
+      if (!ref.read(demoModeProvider)) {
+        await SupabaseService.client
+            .from('service_categories')
+            .update({'is_active': !isActive}).eq('id', id);
+        ref.invalidate(adminServiceCategoriesProvider);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e'), backgroundColor: AppColors.error),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _busy.remove(id));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final async = ref.watch(adminServiceCategoriesProvider);
+
+    return async.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, _) => _ErrorState(
+          message: e.toString(),
+          onRetry: () => ref.invalidate(adminServiceCategoriesProvider)),
+      data: (categories) {
+        if (categories.isEmpty) {
+          return const Text('Sin categorías configuradas.',
+              style: TextStyle(fontSize: 13, color: AppColors.textSecondary));
+        }
+        return Container(
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.divider),
+          ),
+          child: Column(
+            children: categories.map((cat) {
+              final id = cat['id'] as String;
+              final isActive = cat['is_active'] as bool? ?? true;
+              final name = cat['name'] as String? ?? id;
+              final emoji = cat['emoji'] as String? ?? '🔧';
+              return SwitchListTile(
+                dense: true,
+                value: isActive,
+                onChanged: _busy.contains(id) ? null : (_) => _toggle(cat),
+                activeThumbColor: AppColors.success,
+                title: Text('$emoji  $name',
+                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
+                subtitle: Text(isActive ? 'Visible para clientes' : 'Oculta',
+                    style: const TextStyle(fontSize: 11, color: AppColors.textHint)),
+              );
+            }).toList(),
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// Fila de barra horizontal simple (sin librería de gráficos) para
+/// visualizar montos relativos: etiqueta, monto en RD$, y una barra
+/// cuyo ancho es proporcional a `value / maxValue`.
+class _BarRow extends StatelessWidget {
+  final String label;
+  final double value;
+  final double maxValue;
+  final Color color;
+
+  const _BarRow({
+    required this.label,
+    required this.value,
+    required this.maxValue,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final fraction = maxValue <= 0 ? 0.0 : (value / maxValue).clamp(0.0, 1.0);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(label,
+                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis),
+              ),
+              Text(
+                'RD\$${NumberFormat('#,###').format(value.toInt())}',
+                style: TextStyle(
+                    fontSize: 12, fontWeight: FontWeight.w700, color: color),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(6),
+            child: LayoutBuilder(
+              builder: (context, constraints) => Stack(
+                children: [
+                  Container(height: 8, color: AppColors.surfaceVariant),
+                  Container(
+                    height: 8,
+                    width: constraints.maxWidth * fraction,
+                    color: color,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
 // SHARED WIDGETS
 // ═════════════════════════════════════════════════════════════════════════════
+
+class _RateCard extends StatelessWidget {
+  final String label;
+  final double rate;
+  final Color color;
+  final IconData icon;
+
+  const _RateCard({
+    required this.label,
+    required this.rate,
+    required this.color,
+    required this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.divider),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 6),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: color, size: 20),
+          const SizedBox(height: 8),
+          Text('${(rate * 100).toStringAsFixed(0)}%',
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: color)),
+          Text(label,
+              style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+        ],
+      ),
+    );
+  }
+}
 
 class _StatCard extends StatelessWidget {
   final String label;
@@ -1356,8 +1816,8 @@ class _RevenueCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Comisión total = 10% del volumen base (5% clientFee + 5% providerFee)
-    final clientFeeTotal    = revenue * 0.05;
-    final providerFeeTotal  = revenue * 0.05;
+    final clientFeeTotal    = revenue * AppConstants.clientFee;
+    final providerFeeTotal  = revenue * AppConstants.providerFee;
     final totalCommission   = clientFeeTotal + providerFeeTotal;
     return Container(
       padding: const EdgeInsets.all(18),
@@ -1605,6 +2065,36 @@ class _AccessDenied extends StatelessWidget {
       ),
     );
   }
+}
+
+// ─── Simple confirm dialog (sin texto libre) ──────────────────────────────────
+Future<bool> _showConfirmDialog({
+  required BuildContext context,
+  required String title,
+  required String message,
+  required String confirmLabel,
+  required Color confirmColor,
+}) async {
+  final result = await showDialog<bool>(
+    context: context,
+    builder: (_) => AlertDialog(
+      title: Text(title,
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+      content: Text(message, style: const TextStyle(fontSize: 13, height: 1.4)),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(false),
+          child: const Text('Cancelar'),
+        ),
+        ElevatedButton(
+          style: ElevatedButton.styleFrom(backgroundColor: confirmColor),
+          onPressed: () => Navigator.of(context).pop(true),
+          child: Text(confirmLabel),
+        ),
+      ],
+    ),
+  );
+  return result ?? false;
 }
 
 // ─── Note/resolution dialog ───────────────────────────────────────────────────
