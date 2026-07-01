@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/supabase_service.dart';
+import '../../../core/utils/voice_search.dart';
 import '../../../shared/models/service_category_model.dart';
 
 class _SearchHit {
@@ -60,6 +61,28 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     setState(() => _query = v.trim());
     _debounce?.cancel();
     _debounce = Timer(const Duration(milliseconds: 250), _search);
+  }
+
+  Future<void> _startVoiceSearch() async {
+    // Mostrar un breve indicador de "escuchando"
+    final overlay = ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Row(
+          children: [
+            Icon(Icons.mic, color: Colors.white),
+            SizedBox(width: 12),
+            Text('Escuchando… Habla ahora'),
+          ],
+        ),
+        duration: Duration(seconds: 10),
+      ),
+    );
+    final result = await VoiceSearch.listenOnce();
+    overlay.close();
+    if (result != null && result.isNotEmpty && mounted) {
+      _ctrl.text = result;
+      _onChanged(result);
+    }
   }
 
   Future<void> _search() async {
@@ -160,7 +183,14 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
               prefixIcon:
                   const Icon(Icons.search_rounded, color: AppColors.primary),
               suffixIcon: _query.isEmpty
-                  ? null
+                  ? (VoiceSearch.isSupported
+                      ? IconButton(
+                          tooltip: 'Buscar por voz',
+                          icon: const Icon(Icons.mic_rounded,
+                              color: AppColors.primary),
+                          onPressed: _startVoiceSearch,
+                        )
+                      : null)
                   : IconButton(
                       icon: const Icon(Icons.close_rounded, size: 20),
                       onPressed: () {

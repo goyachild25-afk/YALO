@@ -11,6 +11,7 @@ import '../../../shared/widgets/level_badge.dart';
 import '../../../shared/widgets/rating_stars.dart';
 import '../models/service_provider_model.dart';
 import '../providers/providers_list_provider.dart';
+import '../widgets/favorite_button.dart';
 
 class ProviderProfileScreen extends ConsumerWidget {
   final String providerId;
@@ -148,6 +149,15 @@ class ProviderProfileScreen extends ConsumerWidget {
         onPressed: () => context.pop(),
       ),
       actions: [
+        Container(
+          margin: const EdgeInsets.symmetric(vertical: 6),
+          decoration: const BoxDecoration(
+            color: Colors.black26,
+            shape: BoxShape.circle,
+          ),
+          child: FavoriteButton(providerId: providerId, size: 20),
+        ),
+        const SizedBox(width: 4),
         IconButton(
           tooltip: 'Compartir',
           icon: Container(

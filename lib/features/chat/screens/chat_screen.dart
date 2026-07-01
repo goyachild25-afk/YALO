@@ -10,6 +10,7 @@ import '../../../core/services/demo_provider.dart';
 import '../../../core/services/payment_service.dart';
 import '../models/chat_model.dart';
 import '../providers/chat_presence.dart';
+import '../../../core/utils/anti_spam.dart';
 
 final chatMessagesProvider =
     StreamProvider.family<List<ChatMessage>, String>((ref, bookingId) {
@@ -102,8 +103,38 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
   // ── Enviar mensaje de texto ───────────────────────────────────────────────────
   Future<void> _send() async {
-    final text = _textCtrl.text.trim();
-    if (text.isEmpty || _sending) return;
+    final rawText = _textCtrl.text.trim();
+    if (rawText.isEmpty || _sending) return;
+
+    // Anti-spam: si contiene datos de contacto o "vamos fuera de la
+    // plataforma", pedir confirmación al usuario y ofuscar los datos.
+    String text = rawText;
+    if (AntiSpam.containsSensitive(rawText)) {
+      final reason = AntiSpam.reasonFor(rawText) ?? 'información de contacto';
+      final proceed = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Compartir contacto no está permitido'),
+          content: Text(
+            'Detectamos $reason en tu mensaje. Por tu seguridad y la del prestador, coordinamos todo dentro de ServiciosYa (chat, pago, garantía).\n\n'
+            'Si envías el mensaje, los datos sensibles serán ocultados con "🔒".',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: const Text('Editar'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(ctx).pop(true),
+              child: const Text('Enviar oculto'),
+            ),
+          ],
+        ),
+      );
+      if (proceed != true) return;
+      text = AntiSpam.redact(rawText);
+    }
+
     setState(() => _sending = true);
     _textCtrl.clear();
 

@@ -15,6 +15,7 @@ import '../../../shared/models/service_category_model.dart';
 import '../screens/provider_services_screen.dart';
 import '../widgets/client_reputation_badge.dart';
 import '../widgets/provider_stats_section.dart';
+import '../widgets/level_progress_card.dart';
 import '../../../shared/widgets/photo_picker_grid.dart';
 
 // ── Mapa de actividad de RD ───────────────────────────────────────────────────
@@ -469,6 +470,10 @@ class _OpenRequestsWithMapState extends ConsumerState<_OpenRequestsWithMap> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Progreso al siguiente nivel (motivador)
+            const LevelProgressCard(),
+            const SizedBox(height: 16),
+
             // Mi rendimiento personal
             const ProviderStatsSection(),
             const SizedBox(height: 24),

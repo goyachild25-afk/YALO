@@ -430,6 +430,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           onTap: () => context.push('/accessibility'),
         ),
         _ActionTile(
+          icon: Icons.favorite_border_rounded,
+          label: 'Mis favoritos',
+          onTap: () => context.push('/favorites'),
+        ),
+        _ActionTile(
           icon: Icons.card_giftcard_rounded,
           label: 'Invitar amigos',
           onTap: () => context.push('/referrals'),

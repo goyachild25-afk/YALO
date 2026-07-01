@@ -52,6 +52,9 @@ dependencies:
   # provee vía --dart-define=SENTRY_DSN=..., el runtime queda no-op.
   sentry_flutter: ^8.9.0
 
+  # Web platform interop — para búsqueda por voz vía SpeechRecognition
+  web: ^1.0.0
+
   # Fonts
   google_fonts: ^6.2.1
 

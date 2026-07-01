@@ -5,6 +5,8 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:shimmer/shimmer.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
+import '../../../core/services/user_location_service.dart';
+import '../../../core/utils/haversine.dart';
 import '../providers/providers_list_provider.dart';
 import '../models/service_provider_model.dart';
 import '../widgets/provider_card.dart';
@@ -138,6 +140,23 @@ class _ProvidersListScreenState extends ConsumerState<ProvidersListScreen> {
                 } else if (_sortBy == 'jobs') {
                   sorted.sort(
                       (a, b) => b.completedJobs.compareTo(a.completedJobs));
+                } else if (_sortBy == 'distance') {
+                  final loc = ref.watch(userLocationProvider).valueOrNull;
+                  if (loc != null) {
+                    double? distTo(p) {
+                      if (p.latitude == null || p.longitude == null) return null;
+                      return haversineKm(loc.latitude, loc.longitude,
+                          p.latitude!, p.longitude!);
+                    }
+                    sorted.sort((a, b) {
+                      final da = distTo(a);
+                      final db = distTo(b);
+                      if (da == null && db == null) return 0;
+                      if (da == null) return 1;
+                      if (db == null) return -1;
+                      return da.compareTo(db);
+                    });
+                  }
                 }
 
                 if (sorted.isEmpty) return _buildEmptyState();
@@ -185,6 +204,12 @@ class _ProvidersListScreenState extends ConsumerState<ProvidersListScreen> {
             label: 'Más trabajos',
             selected: _sortBy == 'jobs',
             onSelected: (_) => setState(() => _sortBy = 'jobs'),
+          ),
+          const SizedBox(width: 8),
+          _SortChip(
+            label: 'Más cercanos',
+            selected: _sortBy == 'distance',
+            onSelected: (_) => setState(() => _sortBy = 'distance'),
           ),
           const SizedBox(width: 8),
           ..._quickProvinces.skip(1).map((p) => Padding(

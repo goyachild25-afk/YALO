@@ -30,6 +30,7 @@ import '../../features/profile/screens/help_screen.dart';
 import '../../features/profile/screens/accessibility_screen.dart';
 import '../../features/profile/screens/privacy_screen.dart';
 import '../../features/profile/screens/referrals_screen.dart';
+import '../../features/profile/screens/favorites_screen.dart';
 import '../../features/maintenance/screens/maintenance_screen.dart';
 import '../services/maintenance_service.dart';
 import '../../features/safety/screens/terms_screen.dart';
@@ -426,6 +427,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/referrals',
         pageBuilder: (_, state) =>
             _slidePage(state.pageKey, const ReferralsScreen()),
+      ),
+      GoRoute(
+        path: '/favorites',
+        pageBuilder: (_, state) =>
+            _slidePage(state.pageKey, const FavoritesScreen()),
       ),
       GoRoute(
         path: '/maintenance',
