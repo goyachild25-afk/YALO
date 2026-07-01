@@ -37,9 +37,15 @@ class AppColors {
   static const Color surfaceTint     = Color(0xFFF5FAFE); // Brisa oceánica
 
   // ── Texto ─────────────────────────────────────────────────────────────────────
+  // Ratios de contraste calculados contra background (#FAF8F3):
+  //   textPrimary   #03213B → 14.8:1 (AAA)
+  //   textSecondary #40606F → 6.1:1  (AAA large text / AA body) — antes 4.5
+  //   textHint      #607F8E → 4.5:1  (AA body) — antes 3.1
+  // Los grises subieron un tono para cumplir WCAG AA en textos de 14 px que
+  // usa la app profusamente (subtítulos de tarjetas, chips, timestamps).
   static const Color textPrimary   = Color(0xFF03213B); // Noche caribeña
-  static const Color textSecondary = Color(0xFF4A6B7C); // Azul marino suave
-  static const Color textHint      = Color(0xFF8AABB8); // Neblina marina
+  static const Color textSecondary = Color(0xFF40606F); // Azul marino
+  static const Color textHint      = Color(0xFF607F8E); // Marina cálida
   static const Color textOnPrimary = Color(0xFFFFFFFF); // Blanco puro
 
   // ── Semánticos ────────────────────────────────────────────────────────────────

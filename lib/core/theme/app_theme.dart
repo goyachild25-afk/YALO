@@ -11,6 +11,130 @@ import '../constants/app_colors.dart';
 class AppTheme {
   AppTheme._();
 
+  // Paleta oscura — se construye a partir de los colores del brand
+  // conservando la identidad tropical pero con superficies profundas para
+  // reducir fatiga visual en usuarios sensibles a la luz.
+  static const _darkBg = Color(0xFF0A1C2C);        // Océano nocturno
+  static const _darkSurface = Color(0xFF122A3D);   // Marea profunda
+  static const _darkSurfaceVariant = Color(0xFF1B3A52);
+  static const _darkTextPrimary = Color(0xFFF1F5F9);
+  static const _darkTextSecondary = Color(0xFFB7C6D3); // AA sobre _darkBg
+  static const _darkTextHint = Color(0xFF8DA1B4);      // AA sobre _darkBg
+  static const _darkDivider = Color(0xFF25405A);
+  static const _darkBorder = Color(0xFF2E4B67);
+
+  static ThemeData get dark {
+    final base = light;
+    return base.copyWith(
+      brightness: Brightness.dark,
+      colorScheme: const ColorScheme.dark(
+        primary: AppColors.primaryLight,
+        onPrimary: AppColors.textPrimary,
+        secondary: AppColors.secondary,
+        onSecondary: AppColors.textPrimary,
+        tertiary: AppColors.accent,
+        onTertiary: AppColors.textPrimary,
+        surface: _darkSurface,
+        onSurface: _darkTextPrimary,
+        error: AppColors.error,
+        onError: AppColors.textOnPrimary,
+        surfaceContainerHighest: _darkSurfaceVariant,
+        outline: _darkBorder,
+        outlineVariant: _darkDivider,
+      ),
+      scaffoldBackgroundColor: _darkBg,
+      appBarTheme: base.appBarTheme.copyWith(
+        backgroundColor: _darkSurface,
+        foregroundColor: _darkTextPrimary,
+        systemOverlayStyle: SystemUiOverlayStyle.light,
+        titleTextStyle: GoogleFonts.nunito(
+          fontSize: 18,
+          fontWeight: FontWeight.w700,
+          color: _darkTextPrimary,
+          letterSpacing: -0.2,
+        ),
+        iconTheme: const IconThemeData(color: _darkTextPrimary, size: 22),
+      ),
+      // Texto: reusamos la tipografía pero ajustamos los colores para dark
+      textTheme: base.textTheme.apply(
+        bodyColor: _darkTextPrimary,
+        displayColor: _darkTextPrimary,
+      ),
+      cardTheme: base.cardTheme.copyWith(
+        color: _darkSurface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: const BorderSide(color: _darkDivider, width: 1),
+        ),
+      ),
+      chipTheme: base.chipTheme.copyWith(
+        backgroundColor: _darkSurfaceVariant,
+        labelStyle: GoogleFonts.nunito(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: _darkTextPrimary),
+        side: const BorderSide(color: _darkBorder),
+      ),
+      bottomNavigationBarTheme: base.bottomNavigationBarTheme.copyWith(
+        backgroundColor: _darkSurface,
+        unselectedItemColor: _darkTextHint,
+      ),
+      dividerTheme: const DividerThemeData(
+        color: _darkDivider,
+        thickness: 1,
+        space: 1,
+      ),
+      dialogTheme: base.dialogTheme.copyWith(
+        backgroundColor: _darkSurface,
+        titleTextStyle: GoogleFonts.playfairDisplay(
+          fontSize: 20,
+          fontWeight: FontWeight.w700,
+          color: _darkTextPrimary,
+        ),
+        contentTextStyle: GoogleFonts.nunito(
+          fontSize: 14,
+          color: _darkTextSecondary,
+          height: 1.5,
+        ),
+      ),
+      bottomSheetTheme: const BottomSheetThemeData(
+        backgroundColor: _darkSurface,
+        modalBackgroundColor: _darkSurface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        elevation: 16,
+        modalElevation: 24,
+        showDragHandle: true,
+        dragHandleColor: _darkDivider,
+        dragHandleSize: Size(44, 4),
+      ),
+      inputDecorationTheme: base.inputDecorationTheme.copyWith(
+        fillColor: _darkSurface,
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: _darkBorder, width: 1),
+        ),
+        hintStyle:
+            GoogleFonts.nunito(color: _darkTextHint, fontSize: 14),
+        labelStyle:
+            GoogleFonts.nunito(color: _darkTextSecondary, fontSize: 14),
+      ),
+      listTileTheme: base.listTileTheme.copyWith(
+        titleTextStyle: GoogleFonts.nunito(
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
+            color: _darkTextPrimary),
+        subtitleTextStyle: GoogleFonts.nunito(
+            fontSize: 13, color: _darkTextSecondary),
+        iconColor: _darkTextSecondary,
+      ),
+      snackBarTheme: base.snackBarTheme.copyWith(
+        backgroundColor: _darkSurfaceVariant,
+      ),
+    );
+  }
+
   static ThemeData get light {
     return ThemeData(
       useMaterial3: true,

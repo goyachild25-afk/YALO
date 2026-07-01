@@ -13,6 +13,7 @@ import '../../../features/auth/providers/auth_provider.dart';
 import '../../providers_list/providers/providers_list_provider.dart';
 import '../../../shared/models/service_category_model.dart';
 import '../screens/provider_services_screen.dart';
+import '../widgets/client_reputation_badge.dart';
 
 // ── Mapa de actividad de RD ───────────────────────────────────────────────────
 
@@ -612,7 +613,18 @@ class _OpenRequestCardState extends State<_OpenRequestCard>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _InfoRow(icon: Icons.person_outline, text: clientName),
+                    Row(
+                      children: [
+                        Expanded(
+                            child: _InfoRow(
+                                icon: Icons.person_outline, text: clientName)),
+                        if ((r['client_id'] as String?) != null) ...[
+                          const SizedBox(width: 8),
+                          ClientReputationBadge(
+                              clientId: r['client_id'] as String),
+                        ],
+                      ],
+                    ),
                     if (province.isNotEmpty || address.isNotEmpty) ...[
                       const SizedBox(height: 6),
                       _InfoRow(

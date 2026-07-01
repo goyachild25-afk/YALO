@@ -9,6 +9,7 @@ import '../../../core/services/supabase_service.dart';
 import '../../../core/services/demo_provider.dart';
 import '../../../core/services/payment_service.dart';
 import '../models/chat_model.dart';
+import '../providers/chat_presence.dart';
 
 final chatMessagesProvider =
     StreamProvider.family<List<ChatMessage>, String>((ref, bookingId) {
@@ -477,21 +478,61 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                     style: const TextStyle(
                         fontSize: 15, fontWeight: FontWeight.w600),
                   ),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          widget.serviceName,
+                  Consumer(builder: (context, ref, _) {
+                    final presence = ref.watch(chatPresenceProvider(widget.bookingId));
+                    if (widget.otherUserName.isEmpty) {
+                      return Text(widget.serviceName,
                           style: const TextStyle(
+                              fontSize: 12,
+                              color: AppColors.textSecondary,
+                              fontWeight: FontWeight.w400),
+                          overflow: TextOverflow.ellipsis);
+                    }
+                    // Estado del "otro lado":
+                    //   Escribiendo…  (verde, en negrita)  → tiene prioridad
+                    //   En línea      (verde)
+                    //   Servicio      (gris, fallback)
+                    if (presence.otherTyping) {
+                      return const Row(
+                        children: [
+                          Icon(Icons.edit_note_rounded,
+                              size: 14, color: AppColors.success),
+                          SizedBox(width: 4),
+                          Text('Escribiendo…',
+                              style: TextStyle(
+                                  fontSize: 12,
+                                  color: AppColors.success,
+                                  fontWeight: FontWeight.w700)),
+                        ],
+                      );
+                    }
+                    if (presence.otherOnline) {
+                      return Row(
+                        children: [
+                          Container(
+                            width: 8,
+                            height: 8,
+                            decoration: const BoxDecoration(
+                              color: AppColors.success,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          const Text('En línea',
+                              style: TextStyle(
+                                  fontSize: 12,
+                                  color: AppColors.success,
+                                  fontWeight: FontWeight.w600)),
+                        ],
+                      );
+                    }
+                    return Text(widget.serviceName,
+                        style: const TextStyle(
                             fontSize: 12,
                             color: AppColors.textSecondary,
-                            fontWeight: FontWeight.w400,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
+                            fontWeight: FontWeight.w400),
+                        overflow: TextOverflow.ellipsis);
+                  }),
                 ],
               ),
             ),
@@ -642,6 +683,13 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               maxLines: 4,
               minLines: 1,
               textCapitalization: TextCapitalization.sentences,
+              onChanged: (_) {
+                // Broadcast typing al otro lado (throttled a 1s en el provider).
+                ref
+                    .read(chatPresenceProvider(widget.bookingId).notifier)
+                    .broadcastTyping();
+                setState(() {}); // refrescar botón enviar
+              },
               decoration: InputDecoration(
                 hintText: 'Escribe un mensaje...',
                 hintStyle: const TextStyle(fontSize: 14, color: AppColors.textHint),

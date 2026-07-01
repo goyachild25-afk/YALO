@@ -2,9 +2,26 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../shared/widgets/custom_button.dart';
+import '../../../shared/widgets/help_fab.dart';
 
-class BookingConfirmationScreen extends StatelessWidget {
+class BookingConfirmationScreen extends StatefulWidget {
   const BookingConfirmationScreen({super.key});
+
+  @override
+  State<BookingConfirmationScreen> createState() =>
+      _BookingConfirmationScreenState();
+}
+
+class _BookingConfirmationScreenState
+    extends State<BookingConfirmationScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Vibración doble de éxito. Adultos mayores confirman con el tacto sin
+    // necesidad de leer el mensaje, incluso si la pantalla se cargó rápido.
+    WidgetsBinding.instance
+        .addPostFrameCallback((_) => confirmHaptic());
+  }
 
   @override
   Widget build(BuildContext context) {

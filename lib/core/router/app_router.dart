@@ -26,6 +26,7 @@ import '../../features/provider_dashboard/screens/provider_services_screen.dart'
 import '../../features/notifications/screens/notifications_screen.dart';
 import '../../features/auth/screens/change_password_screen.dart';
 import '../../features/profile/screens/help_screen.dart';
+import '../../features/profile/screens/accessibility_screen.dart';
 import '../../features/safety/screens/terms_screen.dart';
 import '../../features/safety/screens/report_dispute_screen.dart';
 import '../../features/provider_dashboard/screens/rate_client_screen.dart';
@@ -385,6 +386,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/help',
         pageBuilder: (_, state) =>
             _slidePage(state.pageKey, const HelpScreen()),
+      ),
+      GoRoute(
+        path: '/accessibility',
+        pageBuilder: (_, state) =>
+            _slidePage(state.pageKey, const AccessibilityScreen()),
       ),
 
       // ── Chat & notificaciones ──────────────────────────────────────────────

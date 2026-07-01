@@ -425,6 +425,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           ),
         ],
         _ActionTile(
+          icon: Icons.text_fields_rounded,
+          label: 'Accesibilidad · tamaño y colores',
+          onTap: () => context.push('/accessibility'),
+        ),
+        _ActionTile(
           icon: Icons.help_outline,
           label: 'Ayuda y soporte',
           onTap: () => context.push('/help'),

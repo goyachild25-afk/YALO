@@ -505,6 +505,32 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
           'Fecha y hora',
           style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         ),
+        const SizedBox(height: 8),
+        const Text(
+          'Elige una opción rápida o toca "Fecha" para elegir manualmente.',
+          style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+        ),
+        const SizedBox(height: 12),
+        // ── Franjas sugeridas — un solo tap llena fecha + hora ─────────────
+        SizedBox(
+          height: 44,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            children: _quickSlots
+                .map((slot) => Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: _QuickSlotChip(
+                        label: slot.label,
+                        selected: _matchesSlot(slot),
+                        onTap: () => setState(() {
+                          _selectedDate = slot.dateTime;
+                          _selectedTime = TimeOfDay.fromDateTime(slot.dateTime);
+                        }),
+                      ),
+                    ))
+                .toList(),
+          ),
+        ),
         const SizedBox(height: 12),
         Row(
           children: [
@@ -535,6 +561,41 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
         ),
       ],
     );
+  }
+
+  /// Genera 6 franjas rápidas: hoy tarde/noche, mañana mañana/tarde/noche, y
+  /// pasado mañana mañana. Se computan cada vez que se dibuja para respetar
+  /// el reloj actual (si son las 4 pm, "Hoy mañana" no aparece).
+  List<_QuickSlot> get _quickSlots {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final tomorrow = today.add(const Duration(days: 1));
+    final afterTomorrow = today.add(const Duration(days: 2));
+    final slots = <_QuickSlot>[];
+
+    // Hoy: solo mostramos franjas que estén al menos 2 h en el futuro para que
+    // el prestador tenga tiempo de aceptar.
+    final cutoff = now.add(const Duration(hours: 2));
+    if (today.add(const Duration(hours: 14)).isAfter(cutoff)) {
+      slots.add(_QuickSlot('Hoy 2:00 PM', today.add(const Duration(hours: 14))));
+    }
+    if (today.add(const Duration(hours: 18)).isAfter(cutoff)) {
+      slots.add(_QuickSlot('Hoy 6:00 PM', today.add(const Duration(hours: 18))));
+    }
+    slots.add(_QuickSlot('Mañana 9:00 AM', tomorrow.add(const Duration(hours: 9))));
+    slots.add(_QuickSlot('Mañana 2:00 PM', tomorrow.add(const Duration(hours: 14))));
+    slots.add(_QuickSlot('Mañana 6:00 PM', tomorrow.add(const Duration(hours: 18))));
+    slots.add(_QuickSlot('Pasado mañana 9:00 AM', afterTomorrow.add(const Duration(hours: 9))));
+    return slots;
+  }
+
+  bool _matchesSlot(_QuickSlot slot) {
+    if (_selectedDate == null || _selectedTime == null) return false;
+    return _selectedDate!.year == slot.dateTime.year &&
+        _selectedDate!.month == slot.dateTime.month &&
+        _selectedDate!.day == slot.dateTime.day &&
+        _selectedTime!.hour == slot.dateTime.hour &&
+        _selectedTime!.minute == slot.dateTime.minute;
   }
 
   Widget _buildAddress() {
@@ -743,6 +804,47 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
             ),
           ],
         ],
+      ),
+    );
+  }
+}
+
+class _QuickSlot {
+  final String label;
+  final DateTime dateTime;
+  const _QuickSlot(this.label, this.dateTime);
+}
+
+class _QuickSlotChip extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+  const _QuickSlotChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: selected ? AppColors.primary : AppColors.primaryLighter,
+      borderRadius: BorderRadius.circular(22),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(22),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          alignment: Alignment.center,
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: selected ? Colors.white : AppColors.primary,
+            ),
+          ),
+        ),
       ),
     );
   }

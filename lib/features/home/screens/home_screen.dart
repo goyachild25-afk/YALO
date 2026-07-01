@@ -11,7 +11,9 @@ import '../../../features/auth/providers/auth_provider.dart';
 import '../../../features/notifications/providers/notifications_provider.dart';
 import '../../../shared/models/service_category_model.dart';
 import '../widgets/featured_providers_section.dart';
+import '../widgets/smart_suggestion.dart';
 import '../../../shared/widgets/pwa_install_banner.dart';
+import '../../../shared/widgets/help_fab.dart';
 
 // ─── Real stats from Supabase ─────────────────────────────────────────────────
 class _HomeStats {
@@ -53,6 +55,8 @@ class HomeScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppColors.background,
       extendBodyBehindAppBar: true,
+      floatingActionButton: const HelpFab(screenLabel: 'Inicio'),
+      floatingActionButtonLocation: FloatingActionButtonLocation.startFloat,
       body: CustomScrollView(
         physics: const BouncingScrollPhysics(),
         slivers: [
@@ -126,6 +130,10 @@ class HomeScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: 12),
                     const _CategoriesGrid(),
+                    const SizedBox(height: 16),
+
+                    // ── Sugerencia inteligente (repetir con favorito) ──────────
+                    const SmartSuggestionCard(),
                     const SizedBox(height: 16),
 
                     // ── Estadísticas de credibilidad ───────────────────────────
