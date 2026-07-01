@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../constants/app_colors.dart';
+import '../../features/auth/providers/auth_provider.dart';
 import 'supabase_service.dart';
 
 /// Servicio que escucha `notifications` en Realtime y muestra un banner
@@ -94,7 +95,11 @@ class _LiveNotificationsHostState extends ConsumerState<LiveNotificationsHost> {
 
   @override
   Widget build(BuildContext context) {
-    // Re-conciliar cada rebuild (login/logout cambia currentUser)
+    // Watchear el authState — cuando cambia (login/logout), el widget
+    // se re-buildea y _reconcile cierra el channel viejo y abre el nuevo.
+    // Sin esto, un logout deja vivo el channel del usuario anterior hasta
+    // el próximo rebuild fortuito.
+    ref.watch(authStateProvider);
     _reconcile();
     return _LiveOverlay(key: _overlayKey, child: widget.child);
   }

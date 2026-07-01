@@ -8,6 +8,7 @@ import '../../../core/constants/app_constants.dart';
 import '../../../core/services/supabase_service.dart';
 import '../../../core/services/demo_provider.dart';
 import '../providers/admin_provider.dart';
+import '../../auth/providers/auth_provider.dart';
 import 'admin_analytics_tab.dart';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -131,12 +132,66 @@ class _AdminBody extends ConsumerWidget {
           IconButton(
             tooltip: 'Actualizar datos',
             icon: const Icon(Icons.refresh),
-            onPressed: onRefresh,
+            onPressed: () {
+              onRefresh();
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Row(
+                    children: [
+                      SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: Colors.white),
+                      ),
+                      SizedBox(width: 12),
+                      Text('Actualizando datos…'),
+                    ],
+                  ),
+                  duration: Duration(milliseconds: 1200),
+                  backgroundColor: AppColors.primary,
+                ),
+              );
+            },
           ),
           IconButton(
-            tooltip: 'Salir',
+            tooltip: 'Cerrar sesión',
             icon: const Icon(Icons.logout),
-            onPressed: () => context.go('/login'),
+            onPressed: () async {
+              // Confirmar antes de cerrar sesión (evita salidas accidentales
+              // por tap fantasma en móvil).
+              final confirm = await showDialog<bool>(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  title: const Text('Cerrar sesión'),
+                  content: const Text(
+                      '¿Quieres cerrar tu sesión de administrador?'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(ctx).pop(false),
+                      child: const Text('Cancelar'),
+                    ),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.error),
+                      onPressed: () => Navigator.of(ctx).pop(true),
+                      child: const Text('Cerrar sesión'),
+                    ),
+                  ],
+                ),
+              );
+              if (confirm != true) return;
+
+              // signOut real. Sin esto, la sesión de Supabase sigue viva,
+              // el router redirect ve authState != null y devuelve el
+              // usuario a /admin inmediatamente.
+              try {
+                await ref
+                    .read(authControllerProvider.notifier)
+                    .signOut();
+              } catch (_) {}
+              if (context.mounted) context.go('/login');
+            },
           ),
         ],
         bottom: TabBar(
