@@ -1,10 +1,13 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:timeago/timeago.dart' as timeago;
+import 'package:url_launcher/url_launcher.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../shared/widgets/custom_button.dart';
+import '../../../shared/widgets/level_badge.dart';
 import '../../../shared/widgets/rating_stars.dart';
 import '../models/service_provider_model.dart';
 import '../providers/providers_list_provider.dart';
@@ -68,6 +71,66 @@ class ProviderProfileScreen extends ConsumerWidget {
     );
   }
 
+  String _providerShareLink() =>
+      'https://goyachild25-afk.github.io/Serviciosya/#/provider/$providerId';
+
+  void _shareProvider(BuildContext context, ServiceProviderModel provider) {
+    showModalBottomSheet(
+      context: context,
+      showDragHandle: true,
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Compartir a ${provider.fullName}',
+                style: const TextStyle(
+                    fontSize: 16, fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 16),
+              _ShareOption(
+                icon: Icons.chat_rounded,
+                color: const Color(0xFF25D366),
+                label: 'WhatsApp',
+                subtitle: 'Enviar por WhatsApp',
+                onTap: () async {
+                  Navigator.pop(ctx);
+                  final msg =
+                      'Te recomiendo a ${provider.fullName} en ServiciosYa 🏠 — ${_providerShareLink()}';
+                  await launchUrl(
+                    Uri.parse('https://wa.me/?text=${Uri.encodeComponent(msg)}'),
+                    mode: LaunchMode.externalApplication,
+                  );
+                },
+              ),
+              const SizedBox(height: 8),
+              _ShareOption(
+                icon: Icons.link_rounded,
+                color: AppColors.primary,
+                label: 'Copiar enlace',
+                subtitle: _providerShareLink(),
+                onTap: () async {
+                  Navigator.pop(ctx);
+                  await Clipboard.setData(
+                      ClipboardData(text: _providerShareLink()));
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                          content: Text('Enlace copiado al portapapeles')),
+                    );
+                  }
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildSliverAppBar(BuildContext context, ServiceProviderModel provider) {
     return SliverAppBar(
       expandedHeight: 280,
@@ -84,6 +147,22 @@ class ProviderProfileScreen extends ConsumerWidget {
         ),
         onPressed: () => context.pop(),
       ),
+      actions: [
+        IconButton(
+          tooltip: 'Compartir',
+          icon: Container(
+            padding: const EdgeInsets.all(6),
+            decoration: const BoxDecoration(
+              color: Colors.black26,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.share_outlined,
+                color: Colors.white, size: 18),
+          ),
+          onPressed: () => _shareProvider(context, provider),
+        ),
+        const SizedBox(width: 4),
+      ],
       flexibleSpace: FlexibleSpaceBar(
         background: provider.photoUrls.isNotEmpty
             ? CachedNetworkImage(
@@ -187,6 +266,8 @@ class ProviderProfileScreen extends ConsumerWidget {
                 size: 16,
                 reviewCount: provider.reviewCount,
               ),
+              const SizedBox(height: 8),
+              LevelBadge(provider.level),
             ],
           ),
         ),
@@ -598,6 +679,70 @@ class _ReviewTile extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+
+class _ShareOption extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final String label;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  const _ShareOption({
+    required this.icon,
+    required this.color,
+    required this.label,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: color.withValues(alpha: 0.08),
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, color: color, size: 22),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(label,
+                        style: const TextStyle(
+                            fontSize: 15, fontWeight: FontWeight.w700)),
+                    const SizedBox(height: 2),
+                    Text(subtitle,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                            fontSize: 12, color: AppColors.textSecondary)),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right_rounded,
+                  color: AppColors.textHint),
+            ],
+          ),
+        ),
       ),
     );
   }

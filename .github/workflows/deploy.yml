@@ -15,7 +15,29 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # 1) Verificación estática — bloquea el deploy si algo rompe
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.32.0'
+          channel: stable
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Analyze (bloqueante para errores, no para info/warnings)
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings
+
+      - name: Smoke tests
+        run: flutter test --no-pub
+
+  # 2) Build — depende de que verify pase
   build:
+    needs: verify
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -36,6 +58,7 @@ jobs:
         with:
           path: build/web
 
+  # 3) Deploy — solo si build pasó
   deploy:
     needs: build
     runs-on: ubuntu-latest

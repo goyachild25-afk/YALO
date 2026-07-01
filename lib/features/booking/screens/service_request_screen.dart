@@ -6,6 +6,7 @@ import '../../../core/services/supabase_service.dart';
 import '../../../core/services/demo_provider.dart';
 import '../../../shared/widgets/custom_button.dart';
 import '../../../shared/widgets/custom_text_field.dart';
+import '../../../shared/widgets/photo_picker_grid.dart';
 import '../../../shared/models/service_category_model.dart';
 
 class ServiceRequestScreen extends ConsumerStatefulWidget {
@@ -30,6 +31,14 @@ class _ServiceRequestScreenState extends ConsumerState<ServiceRequestScreen> {
   final _addressCtrl = TextEditingController();
   final _notesCtrl = TextEditingController();
   bool _isLoading = false;
+  List<String> _servicePhotoUrls = [];
+  // ID temporal para agrupar las fotos por reserva antes de que la reserva
+  // tenga un ID real. Al insertar la fila hacemos referencia a estas URLs
+  // (que ya están en el bucket), así que aunque la reserva se abandone las
+  // fotos quedan huérfanas pero no bloquean el flujo. Un cleanup nocturno
+  // podría purgar carpetas sin booking en el futuro.
+  late final String _draftId =
+      'draft-${DateTime.now().millisecondsSinceEpoch}';
 
   ServiceCategory? get _category => serviceCategories.firstWhere(
         (c) => c.id == widget.categoryId,
@@ -92,6 +101,8 @@ class _ServiceRequestScreenState extends ConsumerState<ServiceRequestScreen> {
                 widget.filterNotes != null && widget.filterNotes!.isNotEmpty
                     ? {'filter_notes': widget.filterNotes}
                     : null,
+            'service_photos':
+                _servicePhotoUrls.isEmpty ? null : _servicePhotoUrls,
             'created_at': DateTime.now().toIso8601String(),
           })
           .select('id')
@@ -259,6 +270,28 @@ class _ServiceRequestScreenState extends ConsumerState<ServiceRequestScreen> {
                 controller: _notesCtrl,
                 maxLines: 3,
                 prefixIcon: Icons.note_outlined,
+              ),
+
+              const SizedBox(height: 20),
+
+              // ── Fotos del problema ────────────────────────────────────────
+              const Text(
+                'Añade fotos del problema (opcional)',
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                'El prestador podrá cotizar con más precisión sin visita previa.',
+                style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+              ),
+              const SizedBox(height: 10),
+              PhotoPickerGrid(
+                bucket: 'booking-photos',
+                folder: _draftId,
+                maxPhotos: 4,
+                initialUrls: _servicePhotoUrls,
+                addLabel: 'Añadir\nfoto',
+                onChange: (urls) => setState(() => _servicePhotoUrls = urls),
               ),
 
               const SizedBox(height: 20),

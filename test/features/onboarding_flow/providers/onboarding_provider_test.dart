@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:serviciosya/features/onboarding_flow/providers/onboarding_provider.dart';
+import 'package:servicios_ya/features/onboarding_flow/providers/onboarding_provider.dart';
 
 void main() {
   group('isOnboardingComplete', () {

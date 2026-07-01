@@ -11,6 +11,7 @@ import '../../features/auth/screens/register_screen.dart';
 import '../../features/auth/screens/forgot_password_screen.dart';
 import '../../features/auth/screens/reset_password_screen.dart';
 import '../../features/home/screens/home_screen.dart';
+import '../../features/home/screens/search_screen.dart';
 import '../../features/providers_list/screens/providers_list_screen.dart';
 import '../../features/providers_list/screens/provider_profile_screen.dart';
 import '../../features/booking/screens/booking_screen.dart';
@@ -28,6 +29,7 @@ import '../../features/auth/screens/change_password_screen.dart';
 import '../../features/profile/screens/help_screen.dart';
 import '../../features/profile/screens/accessibility_screen.dart';
 import '../../features/profile/screens/privacy_screen.dart';
+import '../../features/profile/screens/referrals_screen.dart';
 import '../../features/maintenance/screens/maintenance_screen.dart';
 import '../services/maintenance_service.dart';
 import '../../features/safety/screens/terms_screen.dart';
@@ -286,7 +288,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/search',
         pageBuilder: (_, state) =>
-            _slidePage(state.pageKey, const ProvidersListScreen()),
+            _slidePage(state.pageKey, const SearchScreen()),
       ),
 
       // ── Booking & servicios ────────────────────────────────────────────────
@@ -419,6 +421,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/privacy',
         pageBuilder: (_, state) =>
             _slidePage(state.pageKey, const PrivacyScreen()),
+      ),
+      GoRoute(
+        path: '/referrals',
+        pageBuilder: (_, state) =>
+            _slidePage(state.pageKey, const ReferralsScreen()),
       ),
       GoRoute(
         path: '/maintenance',

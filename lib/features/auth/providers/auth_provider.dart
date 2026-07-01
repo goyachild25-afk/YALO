@@ -60,6 +60,7 @@ class AuthController extends StateNotifier<AsyncValue<void>> {
     required UserRole role,
     required String province,
     required String city,
+    String? referralCode,
   }) async {
     state = const AsyncValue.loading();
     try {
@@ -74,6 +75,8 @@ class AuthController extends StateNotifier<AsyncValue<void>> {
           'role': role.name,
           'province': province,
           'city': city,
+          if (referralCode != null && referralCode.isNotEmpty)
+            'referral_code_used': referralCode.toUpperCase(),
         },
       );
 
@@ -89,6 +92,7 @@ class AuthController extends StateNotifier<AsyncValue<void>> {
             role: role,
             province: province,
             city: city,
+            referralCode: referralCode,
           );
         }
         // Si session == null: confirmación de email pendiente.
@@ -227,8 +231,24 @@ class AuthController extends StateNotifier<AsyncValue<void>> {
     required UserRole role,
     required String province,
     required String city,
+    String? referralCode,
   }) async {
     final now = DateTime.now().toIso8601String();
+
+    // Resolver referredBy: si el código existe, encontramos el uuid del referidor
+    String? referredBy;
+    if (referralCode != null && referralCode.isNotEmpty) {
+      try {
+        final referrer = await SupabaseService.client
+            .from('profiles')
+            .select('id')
+            .eq('referral_code', referralCode.toUpperCase())
+            .maybeSingle();
+        referredBy = referrer?['id'] as String?;
+      } catch (_) {
+        // referido inválido → ignorar sin fallar el registro
+      }
+    }
 
     await SupabaseService.client.from('profiles').upsert({
       'id': userId,
@@ -240,6 +260,7 @@ class AuthController extends StateNotifier<AsyncValue<void>> {
       'city': city,
       'is_verified': false,
       'is_active': true,
+      if (referredBy != null) 'referred_by': referredBy,
       'created_at': now,
       'updated_at': now,
     });

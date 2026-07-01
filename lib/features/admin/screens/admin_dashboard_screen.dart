@@ -8,6 +8,7 @@ import '../../../core/constants/app_constants.dart';
 import '../../../core/services/supabase_service.dart';
 import '../../../core/services/demo_provider.dart';
 import '../providers/admin_provider.dart';
+import 'admin_analytics_tab.dart';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 String _disputeTypeLabel(String? type) {
@@ -60,7 +61,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen>
   @override
   void initState() {
     super.initState();
-    _tab = TabController(length: 8, vsync: this);
+    _tab = TabController(length: 9, vsync: this);
   }
 
   @override
@@ -176,6 +177,7 @@ class _AdminBody extends ConsumerWidget {
             const Tab(text: 'Reservas'),
             const Tab(text: 'Finanzas'),
             const Tab(text: 'Configuración'),
+            const Tab(text: 'Analytics'),
             const Tab(text: 'Auditoría'),
           ],
         ),
@@ -190,6 +192,7 @@ class _AdminBody extends ConsumerWidget {
           _BookingsTab(),
           _FinanceTab(),
           _SettingsTab(),
+          AdminAnalyticsTab(),
           _AuditLogTab(),
         ],
       ),

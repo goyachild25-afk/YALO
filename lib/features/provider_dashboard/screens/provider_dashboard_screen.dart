@@ -14,6 +14,8 @@ import '../../providers_list/providers/providers_list_provider.dart';
 import '../../../shared/models/service_category_model.dart';
 import '../screens/provider_services_screen.dart';
 import '../widgets/client_reputation_badge.dart';
+import '../widgets/provider_stats_section.dart';
+import '../../../shared/widgets/photo_picker_grid.dart';
 
 // ── Mapa de actividad de RD ───────────────────────────────────────────────────
 
@@ -467,6 +469,10 @@ class _OpenRequestsWithMapState extends ConsumerState<_OpenRequestsWithMap> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Mi rendimiento personal
+            const ProviderStatsSection(),
+            const SizedBox(height: 24),
+
             // Mapa de actividad con TODAS las solicitudes de la provincia
             _ActivityMapSection(requests: allRequests
                 .where((r) => r['provider_id'] == null).toList()),
@@ -879,6 +885,92 @@ class _BookingRequestCard extends ConsumerStatefulWidget {
 class _BookingRequestCardState extends ConsumerState<_BookingRequestCard> {
   bool _loading = false;
 
+  Future<void> _confirmCompleteWithPhotos() async {
+    List<String> photos = [];
+    final confirmed = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (ctx) => StatefulBuilder(builder: (ctx, setSheet) {
+        return SafeArea(
+          child: Padding(
+            padding: EdgeInsets.only(
+              left: 20,
+              right: 20,
+              bottom: MediaQuery.of(ctx).viewInsets.bottom + 20,
+              top: 4,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Marcar como completado',
+                    style: TextStyle(
+                        fontSize: 18, fontWeight: FontWeight.w700)),
+                const SizedBox(height: 8),
+                const Text(
+                  'Añade 1-3 fotos del trabajo terminado. Sirven como evidencia si surge una disputa y aumentan la confianza del cliente para dejarte 5 estrellas.',
+                  style: TextStyle(
+                      fontSize: 13,
+                      color: AppColors.textSecondary,
+                      height: 1.5),
+                ),
+                const SizedBox(height: 14),
+                PhotoPickerGrid(
+                  bucket: 'booking-photos',
+                  folder: '${widget.booking['id']}/completion',
+                  maxPhotos: 3,
+                  addLabel: 'Añadir\nfoto',
+                  onChange: (urls) => setSheet(() => photos = urls),
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.of(ctx).pop(false),
+                        child: const Text('Cancelar'),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () => Navigator.of(ctx).pop(true),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.success,
+                          foregroundColor: Colors.white,
+                        ),
+                        child: Text(photos.isEmpty
+                            ? 'Completar sin fotos'
+                            : 'Completar (${photos.length})'),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      }),
+    );
+
+    if (confirmed != true) return;
+
+    // Guardar las fotos ANTES de cambiar el status para que ya estén
+    // registradas cuando el cliente entre a ver el detalle
+    if (photos.isNotEmpty) {
+      try {
+        await SupabaseService.client.from('bookings').update({
+          'completion_photos': photos,
+        }).eq('id', widget.booking['id']);
+      } catch (_) {
+        // no bloqueamos el completar por un error de escritura de fotos
+      }
+    }
+
+    await _updateStatus('completed');
+  }
+
   Future<void> _updateStatus(String newStatus) async {
     setState(() => _loading = true);
     try {
@@ -1060,7 +1152,7 @@ class _BookingRequestCardState extends ConsumerState<_BookingRequestCard> {
                 Expanded(child: ElevatedButton.icon(
                   icon: const Icon(Icons.check_circle_outline, size: 16),
                   label: const Text('Completar'),
-                  onPressed: () => _updateStatus('completed'),
+                  onPressed: _confirmCompleteWithPhotos,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.success, foregroundColor: Colors.white))),
               ]),
