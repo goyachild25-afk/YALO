@@ -13,7 +13,6 @@ class AccessibilityScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final scale = ref.watch(textScaleProvider);
-    final theme = ref.watch(themeModeProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -66,20 +65,65 @@ class AccessibilityScreen extends ConsumerWidget {
           const SizedBox(height: 32),
 
           // ── Modo de tema ─────────────────────────────────────
+          //
+          // El modo oscuro está temporalmente en pausa: quedan textos
+          // con color hardcoded en varias pantallas que se ven ilegibles
+          // sobre fondo oscuro. Se re-habilitará cuando ese refactor esté
+          // completo. Mostramos la sección de solo lectura para que el
+          // usuario sepa que la app está en claro.
           const _SectionHeader(
-            title: 'Modo claro u oscuro',
-            subtitle: 'El modo oscuro es más cómodo con poca luz.',
+            title: 'Modo de tema',
+            subtitle: 'La app está en modo claro mientras terminamos de pulir el modo oscuro.',
           ),
           const SizedBox(height: 12),
-          for (final option in AppThemeMode.values)
-            _OptionTile(
-              label: option.label,
-              description: option.description,
-              selected: option == theme,
-              onTap: () =>
-                  ref.read(themeModeProvider.notifier).set(option),
-              trailingIcon: _iconForMode(option),
+          _OptionTile(
+            label: 'Claro',
+            description: 'Fondo blanco, colores caribeños',
+            selected: true,
+            onTap: () =>
+                ref.read(themeModeProvider.notifier).set(AppThemeMode.light),
+            trailingIcon: Icons.light_mode_outlined,
+          ),
+          const SizedBox(height: 8),
+          // Placeholder informativo del modo oscuro
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: AppColors.surfaceVariant,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: AppColors.divider),
             ),
+            child: Row(
+              children: [
+                const Icon(Icons.dark_mode_outlined,
+                    color: AppColors.textHint, size: 22),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Modo oscuro',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textPrimary.withValues(alpha: 0.6),
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      const Text(
+                        'Disponible próximamente',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textHint,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
           const SizedBox(height: 32),
 
           // ── Otros consejos ────────────────────────────────────
@@ -121,6 +165,7 @@ class AccessibilityScreen extends ConsumerWidget {
     );
   }
 
+  // ignore: unused_element
   IconData _iconForMode(AppThemeMode mode) {
     switch (mode) {
       case AppThemeMode.system:

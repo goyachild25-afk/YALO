@@ -584,13 +584,19 @@ class _VerificationCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(fullName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                             fontWeight: FontWeight.w700, fontSize: 15)),
                     Text('$city${province.isNotEmpty ? ', $province' : ''}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                             fontSize: 12, color: AppColors.textSecondary)),
                     if (email.isNotEmpty)
                       Text(email,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
                               fontSize: 11, color: AppColors.textHint)),
                   ],
@@ -1451,6 +1457,8 @@ class _UsersTabState extends ConsumerState<_UsersTab> {
                       children: [
                         Expanded(
                           child: Text(name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
                                   fontWeight: FontWeight.w600, fontSize: 14)),
                         ),
@@ -1466,9 +1474,13 @@ class _UsersTabState extends ConsumerState<_UsersTab> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(email,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                             style: const TextStyle(fontSize: 11)),
                         if (city.isNotEmpty)
                           Text('$city${province.isNotEmpty ? ', $province' : ''}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                               style: const TextStyle(fontSize: 11, color: AppColors.textHint)),
                       ],
                     ),
@@ -1933,6 +1945,8 @@ class _BookingsTabState extends ConsumerState<_BookingsTab> {
                             Expanded(
                               child: Text(
                                 'Cliente: $clientName',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                                 style: const TextStyle(
                                     fontSize: 12,
                                     color: AppColors.textSecondary),
@@ -1949,6 +1963,8 @@ class _BookingsTabState extends ConsumerState<_BookingsTab> {
                             Expanded(
                               child: Text(
                                 'Prestador: $providerName',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                                 style: const TextStyle(
                                     fontSize: 12,
                                     color: AppColors.textSecondary),
@@ -2553,10 +2569,14 @@ class _AuditLogTab extends ConsumerWidget {
               dense: true,
               leading: const Icon(Icons.history, size: 18, color: AppColors.textHint),
               title: Text(log['action'] as String? ?? '-',
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
               subtitle: Text(
                 '${log['admin_name'] ?? '-'}'
                 '${log['target_table'] != null ? ' · ${log['target_table']}' : ''}',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
               ),
               trailing: createdAt != null

@@ -19,12 +19,20 @@ enum AppTextScale {
   const AppTextScale(this.scale, this.label, this.description);
 }
 
-/// Tema visual. `system` sigue la preferencia del OS (respetuoso para mayores
-/// que ya configuraron modo oscuro por sensibilidad a la luz).
+/// Tema visual.
+///
+/// IMPORTANTE: el modo oscuro requiere que TODAS las pantallas usen colores
+/// del `Theme.of(context).colorScheme` en vez de las constantes de
+/// `AppColors`. Como todavía hay ~231 usos de `AppColors.textPrimary` y
+/// similares hardcoded en la app, el modo oscuro deja muchos textos
+/// invisibles (texto oscuro sobre fondo oscuro). Hasta que se complete ese
+/// refactor, forzamos el tema claro y ocultamos el toggle "Automático" y
+/// "Oscuro" en la pantalla de accesibilidad.
 enum AppThemeMode {
-  system(ThemeMode.system, 'Automático', 'Sigue tu dispositivo'),
   light(ThemeMode.light, 'Claro', 'Fondo blanco'),
-  dark(ThemeMode.dark, 'Oscuro', 'Menos brillo, cómodo de noche');
+  // dark y system deshabilitados temporalmente — ver comentario arriba.
+  system(ThemeMode.light, 'Automático', 'Sigue tu dispositivo'),
+  dark(ThemeMode.light, 'Oscuro', 'Menos brillo, cómodo de noche');
 
   final ThemeMode mode;
   final String label;
@@ -79,7 +87,7 @@ final themeModeProvider =
 );
 
 class ThemeModeController extends StateNotifier<AppThemeMode> {
-  ThemeModeController() : super(AppThemeMode.system) {
+  ThemeModeController() : super(AppThemeMode.light) {
     _load();
   }
 
@@ -90,7 +98,7 @@ class ThemeModeController extends StateNotifier<AppThemeMode> {
       if (raw != null) {
         state = AppThemeMode.values.firstWhere(
           (e) => e.name == raw,
-          orElse: () => AppThemeMode.system,
+          orElse: () => AppThemeMode.light,
         );
       }
     } catch (_) {}
