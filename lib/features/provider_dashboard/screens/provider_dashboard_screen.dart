@@ -10,6 +10,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/services/supabase_service.dart';
 import '../../../core/services/demo_provider.dart';
 import '../../../core/services/payment_service.dart';
+import '../../../core/services/push_service.dart';
 import '../../../features/auth/providers/auth_provider.dart';
 import '../../providers_list/providers/providers_list_provider.dart';
 import '../../../shared/models/service_category_model.dart';
@@ -287,7 +288,7 @@ class ProviderDashboardScreen extends ConsumerWidget {
           icon: Icons.check_circle_outline, color: AppColors.success, background: AppColors.successLight)),
         const SizedBox(width: 10),
         Expanded(child: _StatCard(
-          label: 'Ingresos', value: '\$${totalEarned.toStringAsFixed(0)}',
+          label: 'Ingresos', value: 'RD\$${totalEarned.toStringAsFixed(0)}',
           icon: Icons.attach_money, color: AppColors.primary, background: AppColors.surfaceVariant)),
       ],
     );
@@ -372,6 +373,10 @@ class _OpenRequestsWithMapState extends ConsumerState<_OpenRequestsWithMap> {
       // alimenta el orden "Más cercanos" del lado del cliente: sin
       // coordenadas frescas, ese sort no tiene con qué trabajar.
       _syncMyCoordinates(user.id);
+
+      // Suscribir este navegador a Web Push para recibir solicitudes nuevas
+      // del nicho aunque la app esté cerrada (pide permiso la primera vez).
+      PushService.ensureSubscribed();
     } finally {
       if (mounted) setState(() => _loadingProfile = false);
     }
@@ -844,6 +849,35 @@ class _AvailabilityToggle extends ConsumerStatefulWidget {
 class _AvailabilityToggleState extends ConsumerState<_AvailabilityToggle> {
   bool _isAvailable = true;
   bool _loading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCurrent();
+  }
+
+  // El switch debe reflejar el valor real en la BD: si el prestador se puso
+  // "No disponible" ayer, al reabrir la app debe seguir viéndose apagado.
+  // Antes arrancaba siempre en true y el prestador podía creer que era
+  // visible en búsquedas cuando no lo era.
+  Future<void> _loadCurrent() async {
+    if (ref.read(demoModeProvider)) return;
+    try {
+      final user = SupabaseService.currentUser;
+      if (user == null) return;
+      final row = await SupabaseService.client
+          .from('provider_profiles')
+          .select('is_available')
+          .eq('user_id', user.id)
+          .maybeSingle();
+      final available = row?['is_available'] as bool?;
+      if (mounted && available != null) {
+        setState(() => _isAvailable = available);
+      }
+    } catch (_) {
+      // Sin red dejamos el valor optimista; el toggle sigue funcionando.
+    }
+  }
 
   Future<void> _toggle() async {
     setState(() => _loading = true);

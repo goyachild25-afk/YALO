@@ -7,6 +7,10 @@ class AppConstants {
   static const String googleMapsApiKey = 'AIzaSyAl7co1z59RELF4bZDO2HCRcWDtINPh560';
   // Reservado para futura integración de pagos (PayPal / AZUL)
   static const String paymentGatewayKey = '';
+  // Clave pública VAPID para Web Push (la privada vive en app_secrets,
+  // solo la lee la Edge Function notify-new-request con service role).
+  static const String vapidPublicKey =
+      'BFAqBBJbBSSS2TQewkQNZsB4PRMypNG9Txie9VHD8ZfvjAzJ9IvljtnALRrkJRsQCNipc_r65WgvTeNbhhfxwJQ';
 
   static const double defaultRadius = 50.0; // km
   static const int maxPhotosPerProfile = 6;
