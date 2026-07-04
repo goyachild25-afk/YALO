@@ -30,7 +30,10 @@ self.addEventListener('notificationclick', (event) => {
   // push-sw.js vive en la raíz del deploy (p.ej. /Serviciosya/), así que la
   // base de la app se deriva de la URL del propio worker.
   const base = new URL('./', self.location.href).href;
-  const url = base + '#/dashboard';
+  const type = (event.notification.data || {}).type || '';
+  // new_request → panel del prestador; booking_accepted → Mis servicios del cliente
+  const route = type === 'booking_accepted' ? '#/bookings' : '#/dashboard';
+  const url = base + route;
 
   event.waitUntil((async () => {
     const wins = await clients.matchAll({ type: 'window', includeUncontrolled: true });

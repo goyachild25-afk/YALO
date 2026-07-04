@@ -11,6 +11,7 @@ import '../../../core/services/supabase_service.dart';
 import '../../../core/services/demo_provider.dart';
 import '../../../core/services/payment_service.dart';
 import '../../../core/services/push_service.dart';
+import '../../../core/utils/map_launcher.dart';
 import '../../../features/auth/providers/auth_provider.dart';
 import '../../providers_list/providers/providers_list_provider.dart';
 import '../../../shared/models/service_category_model.dart';
@@ -1201,6 +1202,30 @@ class _BookingRequestCardState extends ConsumerState<_BookingRequestCard> {
             ],
             if (status == 'accepted') ...[
               const SizedBox(height: 12),
+              // Navegar directo a donde está el cliente (usa las coordenadas
+              // GPS capturadas al crear la solicitud, o compartidas por chat)
+              if (booking['client_lat'] != null &&
+                  booking['client_lng'] != null) ...[
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    icon: const Icon(Icons.navigation_rounded, size: 18),
+                    label: const Text('Cómo llegar'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                    ),
+                    onPressed: () => showOpenInMapsSheet(
+                      context,
+                      lat: (booking['client_lat'] as num).toDouble(),
+                      lng: (booking['client_lng'] as num).toDouble(),
+                      title:
+                          'Ubicación de ${booking['client_name'] as String? ?? 'cliente'}',
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+              ],
               Row(children: [
                 Expanded(child: OutlinedButton.icon(
                   icon: const Icon(Icons.chat_bubble_outline, size: 16),

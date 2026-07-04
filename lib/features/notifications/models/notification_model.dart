@@ -4,6 +4,7 @@ enum NotificationType {
   bookingCompleted,
   newBookingRequest,
   newReview,
+  requestExpired,
 }
 
 class AppNotification {

@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/supabase_service.dart';
 import '../../../core/services/demo_provider.dart';
+import '../../../core/services/push_service.dart';
 import '../../providers_list/providers/providers_list_provider.dart';
 import '../../auth/providers/auth_provider.dart';
 
@@ -20,6 +21,14 @@ class _ClientBookingsScreenState extends ConsumerState<ClientBookingsScreen> {
   // Track which booking IDs we've already auto-prompted for review
   final Set<String> _promptedReviewIds = {};
   bool _firstLoad = true;
+
+  @override
+  void initState() {
+    super.initState();
+    // El cliente con reservas activas es quien más necesita el push de
+    // "tu solicitud fue aceptada" — asegurar la suscripción aquí también.
+    PushService.ensureSubscribed();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -552,6 +561,26 @@ class _BookingCard extends ConsumerWidget {
                 ),
               ],
             ),
+            // Recompra en un toque: repite la solicitud con la misma categoría
+            if ((booking['category_id'] as String?)?.isNotEmpty ?? false) ...[
+              const SizedBox(height: 8),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  icon: const Icon(Icons.replay_rounded, size: 18),
+                  label: const Text('Pedir de nuevo'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primaryLighter,
+                    foregroundColor: AppColors.primaryDark,
+                    elevation: 0,
+                  ),
+                  onPressed: () => context.push(
+                    '/service-request?category=${booking['category_id']}'
+                    '&name=${Uri.encodeComponent(booking['service_name'] as String? ?? 'Servicio')}',
+                  ),
+                ),
+              ),
+            ],
           ],
           if (status == 'pending') ...[
             const SizedBox(height: 10),

@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/demo_provider.dart';
+import '../../../core/services/push_service.dart';
 import '../../providers_list/providers/providers_list_provider.dart';
 
 class SearchingProviderScreen extends ConsumerStatefulWidget {
@@ -34,6 +35,10 @@ class _SearchingProviderScreenState
     _timeoutTimer = Timer(const Duration(minutes: _timeoutMinutes), () {
       if (mounted && !_timedOut) setState(() => _timedOut = true);
     });
+    // Suscribir al cliente a Web Push AHORA: está esperando que acepten su
+    // solicitud — el momento perfecto para pedir permiso de notificaciones.
+    // Así el "te notificaremos" de esta pantalla se cumple aunque cierre la app.
+    PushService.ensureSubscribed();
   }
 
   @override

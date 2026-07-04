@@ -52,6 +52,7 @@ class ChatMessage {
       case MessageType.counterOffer: return 'counter_offer';
       case MessageType.offerAccepted: return 'offer_accepted';
       case MessageType.offerRejected: return 'offer_rejected';
+      case MessageType.location: return 'location';
     }
   }
 
@@ -67,6 +68,7 @@ enum MessageType {
   counterOffer,   // Cliente envía contraoferta → content: {"price": 2000}
   offerAccepted,  // Alguna de las partes acepta → content: {"price": 2000, "by": "client"}
   offerRejected,  // Alguna de las partes rechaza → content: {}
+  location,       // Ubicación compartida → content: "lat,lng"
 }
 
 MessageType _typeFromDb(String s) {
@@ -77,6 +79,7 @@ MessageType _typeFromDb(String s) {
     case 'offer_rejected': return MessageType.offerRejected;
     case 'image':          return MessageType.image;
     case 'system':         return MessageType.system;
+    case 'location':       return MessageType.location;
     default:               return MessageType.text;
   }
 }

@@ -11,6 +11,8 @@ import '../../../core/services/payment_service.dart';
 import '../models/chat_model.dart';
 import '../providers/chat_presence.dart';
 import '../../../core/utils/anti_spam.dart';
+import '../../../core/utils/map_launcher.dart';
+import '../../../core/services/user_location_service.dart';
 
 final chatMessagesProvider =
     StreamProvider.family<List<ChatMessage>, String>((ref, bookingId) {
@@ -183,6 +185,98 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             backgroundColor: AppColors.error,
           ),
         );
+      }
+    } finally {
+      if (mounted) setState(() => _sending = false);
+    }
+  }
+
+  // ── Compartir ubicación actual ───────────────────────────────────────────────
+  // Mensaje type 'location' con content "lat,lng". El otro lado lo ve como
+  // tarjeta tocable que abre Google Maps / Waze — se acabó el "mándame la
+  // ubicación por WhatsApp".
+  Future<void> _sendLocation() async {
+    if (_sending) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Compartir tu ubicación'),
+        content: Text(
+          '${widget.otherUserName} verá tu posición exacta en el mapa para poder llegar. ¿Enviar?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Enviar ubicación'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    setState(() => _sending = true);
+    try {
+      final pos = await ref
+          .read(userLocationProvider.future)
+          .timeout(const Duration(seconds: 12));
+      if (pos == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text(
+                'No pudimos obtener tu ubicación. Revisa el permiso del navegador.'),
+            backgroundColor: AppColors.warning,
+          ));
+        }
+        return;
+      }
+
+      final content = '${pos.latitude},${pos.longitude}';
+
+      if (ref.read(demoModeProvider)) {
+        final user = ref.read(demoUserProvider)!;
+        setState(() {
+          _demoLocalMessages.add(ChatMessage(
+            id: 'demo-${DateTime.now().millisecondsSinceEpoch}',
+            bookingId: widget.bookingId,
+            senderId: user.id,
+            senderName: user.fullName,
+            content: content,
+            type: MessageType.location,
+            createdAt: DateTime.now(),
+          ));
+        });
+        _scrollToBottom();
+        return;
+      }
+
+      final user = SupabaseService.currentUser!;
+      final profile = await SupabaseService.client
+          .from('profiles')
+          .select('full_name')
+          .eq('id', user.id)
+          .single();
+
+      await SupabaseService.client.from('chat_messages').insert({
+        'booking_id': widget.bookingId,
+        'sender_id': user.id,
+        'sender_name': profile['full_name'],
+        'content': content,
+        'type': 'location',
+        'is_read': false,
+        'created_at': DateTime.now().toIso8601String(),
+      });
+      _scrollToBottom();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: const Text('No se pudo compartir la ubicación.'),
+          backgroundColor: AppColors.error,
+        ));
       }
     } finally {
       if (mounted) setState(() => _sending = false);
@@ -708,6 +802,14 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       ),
       child: Row(
         children: [
+          // Compartir ubicación (tap target 44px para accesibilidad)
+          IconButton(
+            onPressed: _sending ? null : _sendLocation,
+            tooltip: 'Compartir mi ubicación',
+            icon: const Icon(Icons.location_on_outlined,
+                color: AppColors.primary, size: 26),
+            constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
+          ),
           Expanded(
             child: TextField(
               controller: _textCtrl,
@@ -818,6 +920,11 @@ class _MessageBubble extends StatelessWidget {
       return _buildOfferBubble(context);
     }
 
+    // Ubicación compartida: tarjeta tocable que abre Maps/Waze
+    if (message.type == MessageType.location) {
+      return _buildLocationBubble(context);
+    }
+
     // Mensaje de texto normal
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
@@ -888,6 +995,118 @@ class _MessageBubble extends StatelessWidget {
             ),
           ),
           if (isMine) const SizedBox(width: 6),
+        ],
+      ),
+    );
+  }
+
+  // ── Burbuja de ubicación compartida ──────────────────────────────────────────
+  Widget _buildLocationBubble(BuildContext context) {
+    // content = "lat,lng"
+    final parts = message.content.split(',');
+    final lat = parts.length == 2 ? double.tryParse(parts[0].trim()) : null;
+    final lng = parts.length == 2 ? double.tryParse(parts[1].trim()) : null;
+    final valid = lat != null && lng != null;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        mainAxisAlignment:
+            isMine ? MainAxisAlignment.end : MainAxisAlignment.start,
+        children: [
+          Flexible(
+            child: Column(
+              crossAxisAlignment:
+                  isMine ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+              children: [
+                InkWell(
+                  onTap: valid
+                      ? () => showOpenInMapsSheet(
+                            context,
+                            lat: lat,
+                            lng: lng,
+                            title: isMine
+                                ? 'Tu ubicación compartida'
+                                : 'Ubicación de ${message.senderName}',
+                          )
+                      : null,
+                  borderRadius: BorderRadius.circular(16),
+                  child: Container(
+                    padding: const EdgeInsets.all(14),
+                    constraints: const BoxConstraints(maxWidth: 260),
+                    decoration: BoxDecoration(
+                      color: isMine ? AppColors.primary : AppColors.surface,
+                      borderRadius: BorderRadius.circular(16),
+                      border: isMine
+                          ? null
+                          : Border.all(color: AppColors.primary, width: 1.2),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.06),
+                          blurRadius: 5,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 42,
+                          height: 42,
+                          decoration: BoxDecoration(
+                            color: isMine
+                                ? Colors.white.withValues(alpha: 0.2)
+                                : AppColors.primaryLighter,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(Icons.location_on,
+                              color:
+                                  isMine ? Colors.white : AppColors.primary),
+                        ),
+                        const SizedBox(width: 12),
+                        Flexible(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '📍 Ubicación compartida',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 14,
+                                  color: isMine
+                                      ? Colors.white
+                                      : AppColors.textPrimary,
+                                ),
+                              ),
+                              const SizedBox(height: 3),
+                              Text(
+                                valid
+                                    ? 'Toca para abrir en Maps o Waze'
+                                    : 'Ubicación no disponible',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: isMine
+                                      ? Colors.white.withValues(alpha: 0.85)
+                                      : AppColors.textSecondary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  DateFormat('HH:mm').format(message.createdAt),
+                  style:
+                      const TextStyle(fontSize: 10, color: AppColors.textHint),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );

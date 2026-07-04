@@ -7,6 +7,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/services/supabase_service.dart';
 import '../../../core/services/demo_provider.dart';
 import '../../../core/services/observability_service.dart';
+import '../../../core/services/user_location_service.dart';
 import '../../../shared/widgets/custom_button.dart';
 import '../../../shared/widgets/custom_text_field.dart';
 import '../../providers_list/models/service_provider_model.dart';
@@ -30,6 +31,15 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
   final _notesCtrl = TextEditingController();
   final Map<String, dynamic> _formAnswers = {};
   bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Pre-resolver la ubicación mientras el usuario llena el formulario,
+    // igual que en la solicitud inmediata: al enviar ya está lista y el
+    // prestador recibe el pin exacto + botón "Cómo llegar".
+    Future.microtask(() => ref.read(userLocationProvider.future));
+  }
 
   @override
   void dispose() {
@@ -116,6 +126,17 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
     try {
       final user = SupabaseService.currentUser!;
 
+      // Posición exacta del cliente (best-effort, nunca bloquea el envío)
+      double? clientLat;
+      double? clientLng;
+      try {
+        final pos = await ref
+            .read(userLocationProvider.future)
+            .timeout(const Duration(seconds: 2));
+        clientLat = pos?.latitude;
+        clientLng = pos?.longitude;
+      } catch (_) {}
+
       final profile = await SupabaseService.client
           .from('profiles')
           .select('full_name')
@@ -143,6 +164,8 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
                 ? _selectedService!.fixedPrice
                 : null,
             'form_answers': _formAnswers.isNotEmpty ? _formAnswers : null,
+            if (clientLat != null) 'client_lat': clientLat,
+            if (clientLng != null) 'client_lng': clientLng,
             'created_at': DateTime.now().toIso8601String(),
           })
           .select('id')

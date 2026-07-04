@@ -199,6 +199,8 @@ class _NotificationTile extends ConsumerWidget {
         return Icons.notifications_active_outlined;
       case NotificationType.newReview:
         return Icons.star_outline;
+      case NotificationType.requestExpired:
+        return Icons.hourglass_disabled_outlined;
     }
   }
 
@@ -214,6 +216,8 @@ class _NotificationTile extends ConsumerWidget {
         return AppColors.warning;
       case NotificationType.newReview:
         return AppColors.goldDark;
+      case NotificationType.requestExpired:
+        return AppColors.textSecondary;
     }
   }
 }
