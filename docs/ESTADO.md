@@ -1,6 +1,6 @@
 # YALO — Estado del proyecto
 
-> Documento vivo. Se actualiza cada vez que se despliega algo importante. Si estás leyendo esto en una sesión nueva de Claude Code: este archivo es la fuente de verdad del estado del proyecto — más confiable que memorias sueltas o docs antiguos (`ESTADO_PROYECTO_FLUTTER.md`, `CAMBIOS_REALIZADOS.md`, `TECH_AUDIT_20260624.md`, etc. quedaron obsoletos y no se actualizan más).
+> Documento vivo. Se actualiza cada vez que se despliega algo importante. Si estás leyendo esto en una sesión nueva de Claude Code: este archivo es la fuente de verdad del **estado** del proyecto (qué funciona, qué falta, incidentes). Para arquitectura, backend, configuración y seguridad ver los demás archivos en [`docs/`](.). Los documentos antiguos con marca "ServiciosYa" se eliminaron en la reorganización del repo (julio 2026).
 
 **Última actualización:** 2026-07-09
 **Repo:** `goyachild25-afk/Serviciosya` (nombre del repo no cambió aunque la marca sí — ver "Branding" abajo)
