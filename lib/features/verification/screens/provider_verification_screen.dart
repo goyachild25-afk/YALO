@@ -26,6 +26,7 @@ class _ProviderVerificationScreenState
   XFile? _idBackPhoto;
   XFile? _selfiePhoto;
   bool _isSaving = false;
+  bool _consentGiven = false;
 
   @override
   void dispose() {
@@ -54,6 +55,15 @@ class _ProviderVerificationScreenState
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Sube las 3 fotos requeridas'),
+          backgroundColor: AppColors.warning,
+        ),
+      );
+      return;
+    }
+    if (!_consentGiven) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Debes aceptar el procesamiento de tus documentos para continuar'),
           backgroundColor: AppColors.warning,
         ),
       );
@@ -106,6 +116,7 @@ class _ProviderVerificationScreenState
         'selfie_url': selfieUrl,
         'status': 'pending',
         'submitted_at': DateTime.now().toIso8601String(),
+        'consent_given_at': DateTime.now().toIso8601String(),
       });
 
       await SupabaseService.client
@@ -300,11 +311,51 @@ class _ProviderVerificationScreenState
                 onTap: () => _pickPhoto('selfie'),
                 fullWidth: true,
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: 28),
+
+              // ── Consentimiento explícito para datos biométricos ────────────
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceVariant,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: AppColors.border),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Checkbox(
+                      value: _consentGiven,
+                      onChanged: (v) =>
+                          setState(() => _consentGiven = v ?? false),
+                      visualDensity: VisualDensity.compact,
+                    ),
+                    Expanded(
+                      child: GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTap: () =>
+                            setState(() => _consentGiven = !_consentGiven),
+                        child: const Padding(
+                          padding: EdgeInsets.only(top: 12),
+                          child: Text(
+                            'Acepto que mi cédula y selfie sean procesadas para verificar mi identidad, incluyendo por un proveedor externo especializado. Se eliminan automáticamente 90 días después de la revisión — puedo pedir su borrado antes desde mi perfil. Ver detalles en Términos y Privacidad.',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: AppColors.textSecondary,
+                              height: 1.4,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
 
               PrimaryButton(
                 label: 'Enviar verificación',
-                onPressed: _submit,
+                onPressed: _consentGiven ? _submit : null,
                 isLoading: _isSaving,
                 icon: Icons.send_outlined,
               ),

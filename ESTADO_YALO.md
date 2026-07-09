@@ -2,7 +2,7 @@
 
 > Documento vivo. Se actualiza cada vez que se despliega algo importante. Si estás leyendo esto en una sesión nueva de Claude Code: este archivo es la fuente de verdad del estado del proyecto — más confiable que memorias sueltas o docs antiguos (`ESTADO_PROYECTO_FLUTTER.md`, `CAMBIOS_REALIZADOS.md`, `TECH_AUDIT_20260624.md`, etc. quedaron obsoletos y no se actualizan más).
 
-**Última actualización:** 2026-07-04
+**Última actualización:** 2026-07-08
 **Repo:** `goyachild25-afk/Serviciosya` (nombre del repo no cambió aunque la marca sí — ver "Branding" abajo)
 **URL en producción:** https://goyachild25-afk.github.io/Serviciosya/
 **Supabase project ref:** `ivexcnunszcqoqzzdlfz`
@@ -67,6 +67,18 @@ En curso con contable externo. Se le envió un resumen del modelo de negocio (co
 - **Fotos de perfil visibles en el chat** (ambos lados, antes no se veían) con visor a pantalla completa estilo Instagram (zoom, toque para abrir/cerrar) — también en el perfil del prestador.
 - **Auto-expiración de solicitudes** sin prestador tras 24h (`pg_cron`), con aviso al cliente y botón "Pedir de nuevo" en reservas completadas (recompra en un toque).
 - **Anti-spam en el chat** — bloquea intercambio de teléfonos/emails para evitar que se salten la plataforma.
+- **Visor de foto de perfil estilo Instagram** — un toque en cualquier avatar (chat, perfil de prestador) lo abre en grande con zoom.
+- **Consentimiento explícito + retención de documentos de verificación** — el prestador debe aceptar una casilla clara antes de enviar cédula/selfie (queda con fecha de aceptación en `verification_requests.consent_given_at`). Las imágenes se borran automáticamente 90 días después de revisadas (`purge-verification-docs`, Edge Function + `pg_cron` diario a las 3:30am); el resultado de la verificación se conserva para auditoría. Términos/Privacidad actualizados con la política de retención y la mención del proveedor externo de KYC.
+
+### KYC de identidad (en integración — 2026-07-08)
+
+Se decidió usar **Didit** (didit.me) para verificar cédula + selfie de los prestadores de forma automatizada (documento auténtico + comparación facial + detección de vida), como capa adicional a la revisión manual del admin (la IA nunca aprueba sola).
+
+- Cuenta creada, organización "YALO"
+- API key generada y guardada de forma segura en `app_secrets` (tabla protegida por RLS, nunca en el código — el repo es público)
+- Flujo de verificación elegido: **"Free KYC"** (ID Verification + Liveness + Face Match), gratis hasta 500 verificaciones/mes — descartamos "Biometric Authentication" (no verifica documento) y "KYC + AML" (incluye screening de lavado de dinero, innecesario para este negocio y más caro)
+- **Pendiente:** ID completo del flujo "Free KYC" (para terminar de armar la Edge Function que crea la sesión de verificación y recibe el resultado vía webhook), y conectar ese resultado al panel de verificaciones del admin como un score de apoyo (no como aprobación automática)
+- El conector MCP que ofrece Didit para gestionar la cuenta desde Claude quedó descartado — no se conectó a esta sesión de Claude Code (parece ser para claude.ai, un producto distinto); se sigue el camino directo API key + Edge Function
 
 ---
 
@@ -106,7 +118,6 @@ Cashback 2-3% en puntos por pagar dentro de la app (canjeable como descuento, ex
 - Revisión legal de Términos/Privacidad por abogado dominicano
 - Compra de dominio `yalo.do` y migración de GitHub Pages
 - Activación de Sentry DSN real
-- Servicio de verificación KYC biométrica
 
 ---
 

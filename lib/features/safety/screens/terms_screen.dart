@@ -132,7 +132,7 @@ class _TermsScreenState extends State<TermsScreen> {
                     'Recopilamos las siguientes categorías de datos personales:\n\n'
                     '• Datos de identificación: nombre completo, número de cédula, fecha de nacimiento.\n'
                     '• Datos de contacto: correo electrónico, número de teléfono, dirección.\n'
-                    '• Datos biométricos: foto de perfil, selfie de verificación (solo Prestadores).\n'
+                    '• Datos biométricos: foto de perfil, selfie de verificación (solo Prestadores). La selfie y las fotos de cédula son procesadas por un proveedor externo especializado en verificación de identidad para confirmar que la persona coincide con el documento.\n'
                     '• Datos documentales: fotos de cédula (solo Prestadores).\n'
                     '• Datos operativos: historial de reservas, mensajes de chat, reseñas, ubicación aproximada.\n'
                     '• Datos técnicos: dispositivo, sistema operativo, dirección IP, cookies estrictamente necesarias.\n\n'
@@ -167,7 +167,8 @@ class _TermsScreenState extends State<TermsScreen> {
                     'Conservamos tus datos personales mientras tu cuenta esté activa. Al eliminar tu cuenta, aplicamos:\n\n'
                     '• Anonimización inmediata de datos operativos (nombre, correo, avatar).\n'
                     '• Retención por 5 años de datos financieros y de reservas, requerida por normativa contable y fiscal (Ley 11-92 y sus modificaciones).\n'
-                    '• Retención por 10 años de evidencia de disputas resueltas, para responder a reclamos judiciales que puedan presentarse.\n\n'
+                    '• Retención por 10 años de evidencia de disputas resueltas, para responder a reclamos judiciales que puedan presentarse.\n'
+                    '• Las fotos de cédula y la selfie de verificación se eliminan automáticamente 90 días después de que tu solicitud es revisada (aprobada o rechazada). El resultado de la verificación (aprobado/rechazado y fecha) se conserva para fines de auditoría, pero no las imágenes.\n\n'
                     'Tras esos plazos, los datos son eliminados definitivamente.',
                   ),
                   _buildSection(
