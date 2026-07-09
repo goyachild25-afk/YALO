@@ -70,15 +70,16 @@ En curso con contable externo. Se le envió un resumen del modelo de negocio (co
 - **Visor de foto de perfil estilo Instagram** — un toque en cualquier avatar (chat, perfil de prestador) lo abre en grande con zoom.
 - **Consentimiento explícito + retención de documentos de verificación** — el prestador debe aceptar una casilla clara antes de enviar cédula/selfie (queda con fecha de aceptación en `verification_requests.consent_given_at`). Las imágenes se borran automáticamente 90 días después de revisadas (`purge-verification-docs`, Edge Function + `pg_cron` diario a las 3:30am); el resultado de la verificación se conserva para auditoría. Términos/Privacidad actualizados con la política de retención y la mención del proveedor externo de KYC.
 
-### KYC de identidad (en integración — 2026-07-08)
+### KYC de identidad con Didit — integrado (2026-07-08)
 
-Se decidió usar **Didit** (didit.me) para verificar cédula + selfie de los prestadores de forma automatizada (documento auténtico + comparación facial + detección de vida), como capa adicional a la revisión manual del admin (la IA nunca aprueba sola).
+Se usa **Didit** (didit.me) para verificar cédula + selfie de los prestadores de forma automatizada (documento auténtico + comparación facial + detección de vida en tiempo real). Reemplaza por completo el upload manual de 3 fotos — Didit necesita captura en vivo con su propia cámara, no se puede aplicar sobre una foto ya tomada.
 
-- Cuenta creada, organización "YALO"
-- API key generada y guardada de forma segura en `app_secrets` (tabla protegida por RLS, nunca en el código — el repo es público)
-- Flujo de verificación elegido: **"Free KYC"** (ID Verification + Liveness + Face Match), gratis hasta 500 verificaciones/mes — descartamos "Biometric Authentication" (no verifica documento) y "KYC + AML" (incluye screening de lavado de dinero, innecesario para este negocio y más caro)
-- **Pendiente:** ID completo del flujo "Free KYC" (para terminar de armar la Edge Function que crea la sesión de verificación y recibe el resultado vía webhook), y conectar ese resultado al panel de verificaciones del admin como un score de apoyo (no como aprobación automática)
-- El conector MCP que ofrece Didit para gestionar la cuenta desde Claude quedó descartado — no se conectó a esta sesión de Claude Code (parece ser para claude.ai, un producto distinto); se sigue el camino directo API key + Edge Function
+- App "My Application" en la organización "YALO" (no confundir con "YALO (Sandbox)", que se creó aparte); flujo usado: **"Free KYC"** (`90e027f5-3f62-493d-844e-69275e360f7d`) — ID Verification + Liveness + Face Match, gratis hasta 500 verificaciones/mes. Publicada (salió de `draft`).
+- Secretos guardados en `app_secrets` (nunca en el código): `didit_api_key`, `didit_workflow_id`, `didit_webhook_secret`.
+- **Backend:** `didit-create-session` (el prestador pide una sesión, autenticado) → `didit-webhook` (recibe el resultado, valida firma HMAC-SHA256, guarda en `verification_requests.didit_status` sin tocar la columna `status` que controla el admin).
+- **Frontend:** pantalla de verificación del prestador con un botón que abre la sesión de Didit en pestaña nueva; panel admin muestra el resultado (`_DiditResultBadge`) junto a la revisión manual — la decisión final sigue siendo 100% humana.
+- Verificado server-side (auth rechazada sin JWT, webhook rechaza sin firma válida). **Pendiente de prueba real por el usuario:** completar una captura en vivo de principio a fin (requiere cámara y persona real, no se puede automatizar) para confirmar que el webhook llega y el admin ve el resultado.
+- El conector MCP que ofrece Didit para gestionar la cuenta desde Claude (visto en claude.ai, no en esta sesión de Claude Code) no se usó — se integró todo por API key + Edge Functions directamente.
 
 ---
 
