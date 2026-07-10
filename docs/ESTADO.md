@@ -3,8 +3,8 @@
 > Documento vivo. Se actualiza cada vez que se despliega algo importante. Si estás leyendo esto en una sesión nueva de Claude Code: este archivo es la fuente de verdad del **estado** del proyecto (qué funciona, qué falta, incidentes). Para arquitectura, backend, configuración y seguridad ver los demás archivos en [`docs/`](.). Los documentos antiguos con marca "ServiciosYa" se eliminaron en la reorganización del repo (julio 2026).
 
 **Última actualización:** 2026-07-09
-**Repo:** `goyachild25-afk/Serviciosya` (nombre del repo no cambió aunque la marca sí — ver "Branding" abajo)
-**URL en producción:** https://goyachild25-afk.github.io/Serviciosya/
+**Repo:** `goyachild25-afk/YALO` (renombrado desde "Serviciosya" el 2026-07-09)
+**URL en producción:** https://goyachild25-afk.github.io/YALO/
 **Supabase project ref:** `ivexcnunszcqoqzzdlfz`
 
 ---
@@ -29,7 +29,7 @@ Marketplace Flutter web para servicios del hogar en República Dominicana (limpi
 
 Rebrandeada de **"ServiciosYa" a "YALO"** (julio 2026) porque ONAPI rechazó el registro original — el nombre ya estaba trademarked por otra marca. Slogan: *"¿Ya lo resolviste? Con YALO, sí."* Logo: casa + check, gradiente azul → coral/dorado.
 
-- El repo de GitHub y la URL de deploy **deliberadamente no se renombraron** (evita romper las redirect URLs de Supabase Auth). Plan: migrar a dominio propio `yalo.do` cuando se compre.
+- El repo de GitHub se renombró a **YALO** (2026-07-09). El nombre de usuario de GitHub (`goyachild25-afk`) y el nombre del proyecto Supabase se dejan como están a propósito: solo son visibles en la URL de `github.io` / el dashboard, y se vuelven irrelevantes al migrar al dominio propio `yalo.do` (planificado cuando se compre).
 - **Registro de marca YALO en ONAPI:** en trámite, categoría #35. En espera de respuesta.
 
 ---

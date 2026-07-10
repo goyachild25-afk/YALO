@@ -23,12 +23,12 @@
 
 | Recurso | Valor |
 |---------|-------|
-| Repo GitHub | `goyachild25-afk/Serviciosya` (rename a Yalo pendiente) |
-| URL producción | https://goyachild25-afk.github.io/Serviciosya/ |
+| Repo GitHub | `goyachild25-afk/YALO` |
+| URL producción | https://goyachild25-afk.github.io/YALO/ |
 | Supabase project ref | `ivexcnunszcqoqzzdlfz` |
 | Supabase URL | `https://ivexcnunszcqoqzzdlfz.supabase.co` |
 | Flutter (CI) | 3.32.0 exacto (`C:\Users\JJLA-\flutter_3320\`) |
-| Base-href de deploy | `/Serviciosya/` (atado al nombre del repo) |
+| Base-href de deploy | `/YALO/` (atado al nombre del repo) |
 
 **Claves de cliente** (no secretas, ya en `lib/core/constants/app_constants.dart`):
 Supabase anon key, Google Maps API key, VAPID pública.
@@ -152,4 +152,5 @@ Ver [ESTADO.md](ESTADO.md) (estado vivo detallado) y
 [OVERVIEW.en.md](OVERVIEW.en.md) (resumen en inglés).
 
 **Pendiente principal:** pasarela de pago (AZUL/CardNET/Fygaro, bloqueada por
-formalización fiscal), YALO Puntos, dominio `yalo.do`, rename de repo/cuenta.
+formalización fiscal), YALO Puntos, y dominio propio `yalo.do` (que además
+reemplaza la URL `github.io` con el usuario `goyachild25-afk`).

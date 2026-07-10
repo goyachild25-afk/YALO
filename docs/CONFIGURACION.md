@@ -30,10 +30,10 @@ servidor viven en la tabla `app_secrets` de Supabase, nunca en el repo
 ## Build de producción
 
 ```bash
-flutter build web --release --no-tree-shake-icons --base-href /Serviciosya/
+flutter build web --release --no-tree-shake-icons --base-href /YALO/
 ```
 
-El `base-href /Serviciosya/` es obligatorio: GitHub Pages sirve la app bajo
+El `base-href /YALO/` es obligatorio: GitHub Pages sirve la app bajo
 ese subpath.
 
 ## CI/CD (GitHub Actions)
@@ -57,9 +57,9 @@ está en vivo apenas se aplica, sin desplegar la app.
 
 ## Despliegue y URL
 
-- Repo: `goyachild25-afk/Serviciosya`
-- URL: https://goyachild25-afk.github.io/Serviciosya/
+- Repo: `goyachild25-afk/YALO`
+- URL: https://goyachild25-afk.github.io/YALO/
 
-El nombre del repo y la URL conservan "Serviciosya" a propósito (renombrarlos
-rompería las URLs de redirección de Supabase Auth). Migración a `yalo.do`
-planificada — ver [ESTADO.md](ESTADO.md).
+El repo ya se llama `YALO`. La URL aún incluye el nombre de usuario de GitHub
+(`goyachild25-afk`), pendiente de renombrar; migración a `yalo.do` planificada
+— ver [ESTADO.md](ESTADO.md).

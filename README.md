@@ -7,14 +7,13 @@ con prestadores verificados (limpieza, plomería, electricidad, jardinería,
 cuidado, mudanzas, etc.) con reserva inmediata, chat, ubicación en vivo y
 verificación de identidad.
 
-- **App en producción:** https://goyachild25-afk.github.io/Serviciosya/
+- **App en producción:** https://goyachild25-afk.github.io/YALO/
 - **Stack:** Flutter Web · Supabase · GitHub Pages · CI/CD con GitHub Actions
 
-> Nota de marca: el repositorio y la URL conservan el nombre técnico
-> `Serviciosya` por razones de infraestructura (renombrarlos rompería las
-> URLs de redirección de autenticación). La app está 100 % rebrandeada a
-> **YALO**. La migración al dominio `yalo.do` está planificada. Ver
-> [docs/ESTADO.md](docs/ESTADO.md).
+> Nota de marca: el repositorio ya se llama **YALO**. La URL de producción
+> todavía incluye el nombre de usuario de GitHub (`goyachild25-afk`); no se
+> renombra a propósito, porque desaparece al migrar al dominio propio
+> `yalo.do` (planificado). Ver [docs/ESTADO.md](docs/ESTADO.md).
 
 ---
 

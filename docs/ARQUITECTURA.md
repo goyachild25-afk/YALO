@@ -13,7 +13,7 @@ Edge Functions).
 | Navegación | `go_router` con estrategia de URL por hash y redirección por rol |
 | Backend | Supabase (Postgres + RLS, Auth, Realtime, Storage, Edge Functions, pg_cron, pg_net) |
 | Mapas / ubicación | `google_maps_flutter`, `geolocator` |
-| Hosting | GitHub Pages (base-href `/Serviciosya/`) |
+| Hosting | GitHub Pages (base-href `/YALO/`) |
 | CI/CD | GitHub Actions: `verify` → `build` → `deploy` |
 
 ## Estructura de `lib/`

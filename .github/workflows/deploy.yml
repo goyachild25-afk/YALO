@@ -51,7 +51,7 @@ jobs:
         run: flutter pub get
 
       - name: Build web (release)
-        run: flutter build web --release --no-tree-shake-icons --base-href /Serviciosya/
+        run: flutter build web --release --no-tree-shake-icons --base-href /YALO/
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
