@@ -2,12 +2,27 @@
 
 > Documento vivo. Se actualiza cada vez que se despliega algo importante. Si estás leyendo esto en una sesión nueva de Claude Code: este archivo es la fuente de verdad del **estado** del proyecto (qué funciona, qué falta, incidentes). Para arquitectura, backend, configuración y seguridad ver los demás archivos en [`docs/`](.).
 
-**Última actualización:** 2026-07-09
+**Última actualización:** 2026-07-16
 **Repo:** `goyachild25-afk/YALO`
 **URL en producción:** https://goyachild25-afk.github.io/YALO/
 **Supabase project ref:** `ivexcnunszcqoqzzdlfz`
 
 ---
+
+## ⚠️ Hallazgo y fix (2026-07-16): la suspensión de usuarios no bloqueaba nada
+
+Al conectar el motivo de suspensión al panel Admin se encontró que `is_active`
+no se verificaba en ningún lado — ni login, ni router, ni RLS. Un usuario
+"suspendido" por un admin podía seguir usando la app con total normalidad; el
+botón solo cambiaba una columna que nadie leía. Arreglado: `AuthController.signIn`
+ahora rechaza el login con el motivo si `is_active=false` (nueva columna
+`profiles.suspension_reason`), y `app_router.dart` cierra la sesión en la
+siguiente navegación si suspenden a alguien que ya estaba adentro (mismo
+patrón que el modo mantenimiento). **Alcance:** esto bloquea el acceso vía la
+app; no toca RLS, así que un token ya emitido antes de la suspensión sigue
+siendo técnicamente válido para llamadas directas a la API hasta que expire —
+cerrar esa brecha necesita agregar `is_active` a las políticas RLS (no hecho,
+ver Pendiente).
 
 ## ⚠️ Incidente resuelto (2026-07-09): registro de usuarios caído
 
@@ -98,7 +113,7 @@ Se usa **Didit** (didit.me) para verificar cédula + selfie de los prestadores d
 - Definir estructura fiscal con el contable
 - RNC + cuenta comercial
 - Afiliación AZUL/CardNET o Fygaro
-- Conectar `payment_service.dart` al cobro real (hoy solo registra intención; el pago se acuerda en efectivo directo con el prestador, con aviso honesto de "fase piloto" en la pantalla de pago)
+- Conectar `payment_service.dart` al cobro real (hoy solo registra intención; el pago se acuerda en efectivo directo con el prestador). La pantalla de pago mostraba un flujo de "garantía" con tarjeta/reserva/cobro automático que nunca existió — corregido 2026-07-16 para reflejar el flujo real (confirmar reserva, pagar directo al prestador)
 
 ### 2. Sistema "YALO Puntos" (diseñado, no implementado)
 Cashback 2-3% en puntos por pagar dentro de la app (canjeable como descuento, expira a los 90 días) — pensado para formar el hábito de pago in-app *antes* de que exista la pasarela real, ganándose por completar la reserva dentro de la app. Complementa:
@@ -108,24 +123,25 @@ Cashback 2-3% en puntos por pagar dentro de la app (canjeable como descuento, ex
 - Constancia de ingresos descargable para prestadores (útil para préstamos/visados)
 
 ### 3. Panel Admin — mejoras identificadas, no implementadas
-- Conectar de verdad el campo "Comisión (%)" de Configuración al cálculo real (hoy es decorativo; el cálculo vive hardcoded en `AppConstants.clientFee`/`providerFee`) — separar en dos campos (% cliente / % prestador)
-- Exportar Finanzas a CSV
+- ~~Conectar "Comisión (%)" al cálculo real~~ — hecho 2026-07-16: dos campos (% cliente / % prestador) en `app_settings`, `PaymentService` los carga en vivo
+- ~~Exportar Finanzas a CSV~~ — hecho 2026-07-16
+- ~~Suspensión de usuario con motivo visible~~ — hecho 2026-07-16 (ver hallazgo arriba)
 - Notificación al admin cuando llega verificación/disputa nueva
 - Botón "Contactar" directo en Usuarios y Disputas
 - Métrica "tiempo hasta primera aceptación" en Analytics
-- Suspensión de usuario con motivo visible para el usuario
 
 ### 4. Panel Prestador — mejoras identificadas, no implementadas
-- Desglose de ganancia neta por trabajo en la tarjeta ("Recibirás RD$950 tras membresía 5%")
-- Historial de trabajos completados (hoy desaparecen de la lista, solo quedan en el contador)
+- ~~Desglose de ganancia neta por trabajo en la tarjeta~~ — hecho 2026-07-16
+- ~~Historial de trabajos completados~~ — hecho 2026-07-16 (`/provider-history`)
+- ~~Cancelación con motivo y estado propio~~ — hecho 2026-07-16: usa el status `cancelled` que ya existía (el cliente ya lo usaba), motivo anexado a `notes`, sin migración
 - Filtro/orden por distancia además de provincia (Haversine ya existe en el código)
-- Cancelación con motivo y estado propio (`cancelled_by_provider`), separado de "rechazada"
 
 ### 5. Deuda técnica
 - ~231 usos de `AppColors.textPrimary` (color hardcoded) impiden reactivar modo oscuro — hoy forzado a claro para evitar texto invisible
+- RLS no verifica `is_active` — la suspensión ahora bloquea login y navegación (ver hallazgo arriba), pero un token ya emitido antes de suspender sigue siendo válido para llamadas directas a la API hasta que expire. Cerrar esto requiere agregar `is_active` a las políticas RLS de las tablas relevantes.
 
 ### 6. Bloqueado por el usuario (no accionable por Claude sin su intervención)
-- Revisión legal de Términos/Privacidad por abogado dominicano
+- Revisión legal de Términos/Privacidad por abogado dominicano — v4 ya incorpora una ronda de revisión preliminar (fuerza mayor, propiedad intelectual, renuncia de garantías, reparación en especie sin efectivo, marca, impuestos del prestador — ver `lib/features/safety/screens/terms_screen.dart`), pero sigue pendiente la firma de un abogado licenciado
 - Compra de dominio `yalo.do` y migración de GitHub Pages
 - Activación de Sentry DSN real
 
