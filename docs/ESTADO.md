@@ -130,7 +130,7 @@ Cashback 2-3% en puntos por pagar dentro de la app (canjeable como descuento, ex
 - ~~Desglose de ganancia neta por trabajo en la tarjeta~~ — hecho 2026-07-16
 - ~~Historial de trabajos completados~~ — hecho 2026-07-16 (`/provider-history`)
 - ~~Cancelación con motivo y estado propio~~ — hecho 2026-07-16: usa el status `cancelled` que ya existía (el cliente ya lo usaba), motivo anexado a `notes`, sin migración
-- Filtro/orden por distancia además de provincia (Haversine ya existe en el código)
+- ~~Filtro/orden por distancia además de provincia~~ — hecho 2026-07-16: "Solicitudes para ti" ahora se ordena por cercanía real (Haversine) usando la ubicación del prestador, con la distancia visible en cada tarjeta; la provincia sigue siendo el filtro de la consulta, la distancia es el orden dentro de ella
 
 ### 5. Deuda técnica
 - ~231 usos de `AppColors.textPrimary` (color hardcoded) impiden reactivar modo oscuro — hoy forzado a claro para evitar texto invisible

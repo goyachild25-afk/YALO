@@ -12,6 +12,7 @@ import '../../../core/services/demo_provider.dart';
 import '../../../core/services/payment_service.dart';
 import '../../../core/services/push_service.dart';
 import '../../../core/utils/map_launcher.dart';
+import '../../../core/utils/haversine.dart';
 import '../../verification/providers/verification_status_provider.dart';
 import '../../../features/auth/providers/auth_provider.dart';
 import '../../providers_list/providers/providers_list_provider.dart';
@@ -523,12 +524,23 @@ class _OpenRequestsWithMapState extends ConsumerState<_OpenRequestsWithMap> {
       SnackBar(content: Text(msg), backgroundColor: color));
   }
 
+  /// Distancia del prestador a una solicitud, o null si falta alguna
+  /// coordenada (posición propia sin permiso todavía, o solicitud sin GPS).
+  double? _distanceTo(Map<String, dynamic> request, Position? myPos) {
+    if (myPos == null) return null;
+    final lat = request['client_lat'] as num?;
+    final lng = request['client_lng'] as num?;
+    if (lat == null || lng == null) return null;
+    return haversineKm(myPos.latitude, myPos.longitude, lat.toDouble(), lng.toDouble());
+  }
+
   @override
   Widget build(BuildContext context) {
     if (ref.watch(demoModeProvider)) return const SizedBox.shrink();
     if (_loadingProfile) return const SizedBox.shrink();
 
     final requestsAsync = ref.watch(openRequestsProvider(_province));
+    final myPos = ref.watch(userLocationProvider).valueOrNull;
 
     return requestsAsync.when(
       loading: () => const SizedBox.shrink(),
@@ -538,6 +550,21 @@ class _OpenRequestsWithMapState extends ConsumerState<_OpenRequestsWithMap> {
         final matched = allRequests
             .where((r) => r['provider_id'] == null && _matchesCategory(r))
             .toList();
+
+        // Ordena por cercanía cuando tenemos la ubicación del prestador —
+        // antes solo se filtraba por provincia, sin ningún orden dentro de
+        // ella. Las solicitudes sin coordenadas (poco frecuente) quedan al
+        // final, no se descartan.
+        if (myPos != null) {
+          matched.sort((a, b) {
+            final da = _distanceTo(a, myPos);
+            final db = _distanceTo(b, myPos);
+            if (da == null && db == null) return 0;
+            if (da == null) return 1;
+            if (db == null) return -1;
+            return da.compareTo(db);
+          });
+        }
 
         // Notificación si llega una solicitud nueva que coincide
         if (matched.length > _previousRequestCount && _previousRequestCount > 0) {
@@ -601,7 +628,9 @@ class _OpenRequestsWithMapState extends ConsumerState<_OpenRequestsWithMap> {
                 style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
               const SizedBox(height: 12),
               ...matched.take(5).map((r) => _OpenRequestCard(
-                request: r, onAccept: () => _acceptRequest(r))),
+                request: r,
+                distanceKm: _distanceTo(r, myPos),
+                onAccept: () => _acceptRequest(r))),
             ] else ...[
               Container(
                 padding: const EdgeInsets.all(16),
@@ -632,8 +661,9 @@ class _OpenRequestsWithMapState extends ConsumerState<_OpenRequestsWithMap> {
 
 class _OpenRequestCard extends StatefulWidget {
   final Map<String, dynamic> request;
+  final double? distanceKm;
   final Future<void> Function() onAccept;
-  const _OpenRequestCard({required this.request, required this.onAccept});
+  const _OpenRequestCard({required this.request, this.distanceKm, required this.onAccept});
 
   @override
   State<_OpenRequestCard> createState() => _OpenRequestCardState();
@@ -734,8 +764,11 @@ class _OpenRequestCardState extends State<_OpenRequestCard>
                       const SizedBox(height: 6),
                       _InfoRow(
                         icon: Icons.location_on_outlined,
-                        text: [if (province.isNotEmpty) province, if (address.isNotEmpty) address]
-                            .join(' · '),
+                        text: [
+                          if (province.isNotEmpty) province,
+                          if (address.isNotEmpty) address,
+                          if (widget.distanceKm != null) 'a ${formatDistance(widget.distanceKm!)}',
+                        ].join(' · '),
                       ),
                     ],
                     if (date != null) ...[
