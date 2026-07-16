@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/supabase_service.dart';
 import '../../../core/services/payment_service.dart';
+import '../../../core/services/csv_download_service.dart';
 import '../../../core/services/demo_provider.dart';
 import '../providers/admin_provider.dart';
 import '../../auth/providers/auth_provider.dart';
@@ -2164,6 +2165,43 @@ class _BookingsTabState extends ConsumerState<_BookingsTab> {
 class _FinanceTab extends ConsumerWidget {
   const _FinanceTab();
 
+  String _buildCsv(AdminFinanceData finance) {
+    const f = CsvDownloadService.field;
+    final buffer = StringBuffer();
+    buffer.writeln(f('YALO — Reporte financiero'));
+    buffer.writeln('${f('Generado')},${f(DateTime.now().toIso8601String())}');
+    buffer.writeln();
+
+    buffer.writeln(f('Tendencia de ingresos (últimas 8 semanas)'));
+    buffer.writeln('${f('Semana')},${f('Ingresos (RD\$)')}');
+    for (final w in finance.weeklyTrend) {
+      buffer.writeln(
+          '${f(DateFormat('dd/MM/yyyy').format(w.weekStart))},${f(w.total.toStringAsFixed(2))}');
+    }
+    buffer.writeln();
+
+    buffer.writeln(f('Ingresos por servicio (últimos 90 días)'));
+    buffer.writeln('${f('Servicio')},${f('Reservas')},${f('Ingresos (RD\$)')}');
+    for (final s in finance.byService) {
+      buffer.writeln('${f(s.name)},${f(s.count)},${f(s.total.toStringAsFixed(2))}');
+    }
+    buffer.writeln();
+
+    buffer.writeln(f('Top prestadores por ingresos'));
+    buffer.writeln('${f('Prestador')},${f('Trabajos')},${f('Ingresos (RD\$)')}');
+    for (final p in finance.topProviders) {
+      buffer.writeln('${f(p.name)},${f(p.jobs)},${f(p.total.toStringAsFixed(2))}');
+    }
+    return buffer.toString();
+  }
+
+  void _exportCsv(BuildContext context, AdminFinanceData finance) {
+    final stamp = DateFormat('yyyyMMdd-HHmm').format(DateTime.now());
+    CsvDownloadService.download('yalo-finanzas-$stamp.csv', _buildCsv(finance));
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('✅ CSV descargado'), backgroundColor: AppColors.success));
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(adminFinanceDataProvider);
@@ -2191,6 +2229,15 @@ class _FinanceTab extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Align(
+                alignment: Alignment.centerRight,
+                child: OutlinedButton.icon(
+                  onPressed: noFinanceData ? null : () => _exportCsv(context, finance),
+                  icon: const Icon(Icons.download_outlined, size: 16),
+                  label: const Text('Exportar CSV'),
+                ),
+              ),
+              const SizedBox(height: 16),
               if (noFinanceData) ...[
                 Container(
                   padding: const EdgeInsets.all(14),
