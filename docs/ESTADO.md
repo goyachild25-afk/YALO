@@ -122,7 +122,7 @@ Cashback 2-3% en puntos por pagar dentro de la app (canjeable como descuento, ex
 - ~~Conectar "Comisión (%)" al cálculo real~~ — hecho 2026-07-16: dos campos (% cliente / % prestador) en `app_settings`, `PaymentService` los carga en vivo
 - ~~Exportar Finanzas a CSV~~ — hecho 2026-07-16
 - ~~Suspensión de usuario con motivo visible~~ — hecho 2026-07-16 (ver hallazgo arriba)
-- Notificación al admin cuando llega verificación/disputa nueva
+- ~~Notificación al admin cuando llega verificación/disputa nueva~~ — hecho 2026-07-16: toast en vivo (Realtime) mientras el admin está en el dashboard, más refresco automático de la pestaña correspondiente. De paso se encontró y corrigió que `verification_requests`, `disputes` y `app_settings` no estaban en la publicación de Realtime — el modo mantenimiento en vivo llevaba tiempo sin propagarse entre sesiones por lo mismo
 - ~~Botón "Contactar" directo en Usuarios y Disputas~~ — hecho 2026-07-16: WhatsApp con el teléfono, o `mailto:` si no hay teléfono
 - Métrica "tiempo hasta primera aceptación" en Analytics
 

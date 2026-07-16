@@ -116,6 +116,40 @@ class _AdminBody extends ConsumerWidget {
     final pendingVerif = statsAsync.valueOrNull?.pendingVerifications ?? 0;
     final openDisputes = statsAsync.valueOrNull?.openDisputes ?? 0;
 
+    // Avisa en el momento si llega una verificación o disputa nueva mientras
+    // el admin está en el dashboard — antes solo se enteraba si tocaba
+    // "Actualizar datos" o volvía a entrar a esa pestaña.
+    ref.listen(newVerificationInsertProvider, (_, next) {
+      final row = next.valueOrNull;
+      if (row == null) return;
+      ref.invalidate(adminVerificationsProvider);
+      ref.invalidate(adminStatsProvider);
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Row(children: [
+          Icon(Icons.fact_check_outlined, color: Colors.white, size: 20),
+          SizedBox(width: 12),
+          Expanded(child: Text('Nueva verificación de identidad pendiente')),
+        ]),
+        backgroundColor: AppColors.info,
+        duration: Duration(seconds: 4),
+      ));
+    });
+    ref.listen(newDisputeInsertProvider, (_, next) {
+      final row = next.valueOrNull;
+      if (row == null) return;
+      ref.invalidate(adminDisputesProvider);
+      ref.invalidate(adminStatsProvider);
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Row(children: [
+          Icon(Icons.report_problem_outlined, color: Colors.white, size: 20),
+          SizedBox(width: 12),
+          Expanded(child: Text('Nueva disputa reportada')),
+        ]),
+        backgroundColor: AppColors.error,
+        duration: Duration(seconds: 4),
+      ));
+    });
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(

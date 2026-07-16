@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/services/supabase_service.dart';
@@ -486,6 +487,50 @@ final adminVerificationsProvider =
   } catch (_) {
     return [];
   }
+});
+
+// ─── Alertas en vivo: nueva verificación / disputa mientras el admin está
+// en el dashboard. Antes no había forma de enterarse de algo nuevo sin
+// tocar manualmente "Actualizar datos" — estos emiten cada vez que se
+// inserta una fila, para disparar un toast + refrescar la pestaña.
+final newVerificationInsertProvider =
+    StreamProvider.autoDispose<Map<String, dynamic>>((ref) {
+  if (ref.watch(demoModeProvider)) return const Stream.empty();
+  final controller = StreamController<Map<String, dynamic>>();
+  final channel = SupabaseService.client
+      .channel('admin:verification_requests:insert')
+      .onPostgresChanges(
+        event: PostgresChangeEvent.insert,
+        schema: 'public',
+        table: 'verification_requests',
+        callback: (payload) => controller.add(payload.newRecord),
+      )
+      .subscribe();
+  ref.onDispose(() {
+    SupabaseService.client.removeChannel(channel);
+    controller.close();
+  });
+  return controller.stream;
+});
+
+final newDisputeInsertProvider =
+    StreamProvider.autoDispose<Map<String, dynamic>>((ref) {
+  if (ref.watch(demoModeProvider)) return const Stream.empty();
+  final controller = StreamController<Map<String, dynamic>>();
+  final channel = SupabaseService.client
+      .channel('admin:disputes:insert')
+      .onPostgresChanges(
+        event: PostgresChangeEvent.insert,
+        schema: 'public',
+        table: 'disputes',
+        callback: (payload) => controller.add(payload.newRecord),
+      )
+      .subscribe();
+  ref.onDispose(() {
+    SupabaseService.client.removeChannel(channel);
+    controller.close();
+  });
+  return controller.stream;
 });
 
 /// Open + inReview disputes
