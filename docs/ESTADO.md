@@ -9,20 +9,16 @@
 
 ---
 
-## ⚠️ Hallazgo y fix (2026-07-16): la suspensión de usuarios no bloqueaba nada
+## ⚠️ Incidente resuelto (2026-07-16): la suspensión de usuarios no bloqueaba el acceso
 
-Al conectar el motivo de suspensión al panel Admin se encontró que `is_active`
-no se verificaba en ningún lado — ni login, ni router, ni RLS. Un usuario
-"suspendido" por un admin podía seguir usando la app con total normalidad; el
-botón solo cambiaba una columna que nadie leía. Arreglado: `AuthController.signIn`
-ahora rechaza el login con el motivo si `is_active=false` (nueva columna
-`profiles.suspension_reason`), y `app_router.dart` cierra la sesión en la
-siguiente navegación si suspenden a alguien que ya estaba adentro (mismo
-patrón que el modo mantenimiento). **Alcance:** esto bloquea el acceso vía la
-app; no toca RLS, así que un token ya emitido antes de la suspensión sigue
-siendo técnicamente válido para llamadas directas a la API hasta que expire —
-cerrar esa brecha necesita agregar `is_active` a las políticas RLS (no hecho,
-ver Pendiente).
+Al conectar el motivo de suspensión al panel Admin se encontró que suspender
+a un usuario no le impedía seguir usando la app con normalidad. Corregido en
+varias capas — login, navegación, y a nivel del servidor de autenticación
+(nueva Edge Function `suspend-user`; motivo visible al usuario en
+`profiles.suspension_reason`). Detalles técnicos específicos no se documentan
+aquí por ser un repositorio público. Queda pendiente como mejora de defensa
+en profundidad (no bloqueante) reforzar las políticas RLS existentes en las
+tablas de negocio — ver Pendiente → Deuda técnica.
 
 ## ⚠️ Incidente resuelto (2026-07-09): registro de usuarios caído
 
@@ -138,7 +134,7 @@ Cashback 2-3% en puntos por pagar dentro de la app (canjeable como descuento, ex
 
 ### 5. Deuda técnica
 - ~231 usos de `AppColors.textPrimary` (color hardcoded) impiden reactivar modo oscuro — hoy forzado a claro para evitar texto invisible
-- RLS no verifica `is_active` — la suspensión ahora bloquea login y navegación (ver hallazgo arriba), pero un token ya emitido antes de suspender sigue siendo válido para llamadas directas a la API hasta que expire. Cerrar esto requiere agregar `is_active` a las políticas RLS de las tablas relevantes.
+- Reforzar RLS con verificación de `is_active` en las tablas de negocio (defensa en profundidad — el bloqueo principal de la suspensión ya funciona, ver incidente resuelto arriba). Requiere revisar primero las políticas existentes de `bookings` y afines, que tienen bastante acumulación histórica (varias políticas superpuestas por tabla) — mejor hacerlo con un branch de Supabase para probar sin tocar producción directo.
 
 ### 6. Bloqueado por el usuario (no accionable por Claude sin su intervención)
 - Revisión legal de Términos/Privacidad por abogado dominicano — v4 ya incorpora una ronda de revisión preliminar (fuerza mayor, propiedad intelectual, renuncia de garantías, reparación en especie sin efectivo, marca, impuestos del prestador — ver `lib/features/safety/screens/terms_screen.dart`), pero sigue pendiente la firma de un abogado licenciado

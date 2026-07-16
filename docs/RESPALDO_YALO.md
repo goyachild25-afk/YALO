@@ -107,6 +107,7 @@ admin.
 | capture-payment | sí | captura de pago (fase pago) |
 | export-my-data | sí | Ley 172-13: exportar datos |
 | delete-my-account | sí | Ley 172-13: borrar cuenta |
+| suspend-user | sí | solo admin: revoca/restaura acceso al suspender/reactivar un usuario |
 
 > Nota: las fuentes de las funciones desplegadas vía panel no están todas en
 > el repo. Copias locales parciales en `supabase/functions/`.

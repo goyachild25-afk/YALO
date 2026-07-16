@@ -1441,6 +1441,27 @@ class _UsersTabState extends ConsumerState<_UsersTab> {
             details: isActive ? {'name': name, 'reason': reason} : {'name': name});
         ref.invalidate(adminRecentUsersProvider);
         ref.invalidate(adminAllUsersProvider);
+
+        // Revoca (o restaura) la posibilidad de renovar la sesión a nivel
+        // de Supabase Auth — is_active por sí solo no bloquea nada del lado
+        // del servidor. Si esto falla, el usuario igual queda bloqueado por
+        // la app (login + router ya verifican is_active), pero avisamos.
+        var hardBlockFailed = false;
+        try {
+          final resp = await SupabaseService.client.functions.invoke(
+            'suspend-user',
+            body: {'user_id': id, 'banned': isActive},
+          );
+          if (resp.status != 200) hardBlockFailed = true;
+        } catch (_) {
+          hardBlockFailed = true;
+        }
+        if (mounted && hardBlockFailed) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('⚠️ Perfil actualizado, pero no se pudo revocar la sesión a nivel de servidor. Reintenta si es urgente.'),
+            backgroundColor: AppColors.warning,
+          ));
+        }
       }
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
