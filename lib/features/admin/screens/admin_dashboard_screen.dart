@@ -1404,26 +1404,41 @@ class _UsersTabState extends ConsumerState<_UsersTab> {
     final id = user['id'] as String;
     final isActive = user['is_active'] as bool? ?? true;
     final name = user['full_name'] as String? ?? 'este usuario';
-    final confirmed = await _showConfirmDialog(
-      context: context,
-      title: isActive ? 'Suspender usuario' : 'Reactivar usuario',
-      message: isActive
-          ? '¿Suspender a $name? No podrá iniciar sesión ni usar la app hasta que lo reactives.'
-          : '¿Reactivar a $name? Podrá volver a iniciar sesión y usar la app.',
-      confirmLabel: isActive ? 'Suspender' : 'Reactivar',
-      confirmColor: isActive ? AppColors.error : AppColors.success,
-    );
-    if (!confirmed) return;
+
+    String? reason;
+    if (isActive) {
+      // Suspender: el motivo es obligatorio — el usuario lo verá al
+      // intentar entrar, y queda en el audit log.
+      reason = await _showNoteDialog(
+        context: context,
+        title: 'Suspender a $name',
+        hint: 'Motivo de la suspensión (lo verá el usuario)...',
+        confirmLabel: 'Suspender',
+        confirmColor: AppColors.error,
+      );
+      if (reason == null) return;
+    } else {
+      final confirmed = await _showConfirmDialog(
+        context: context,
+        title: 'Reactivar usuario',
+        message: '¿Reactivar a $name? Podrá volver a iniciar sesión y usar la app.',
+        confirmLabel: 'Reactivar',
+        confirmColor: AppColors.success,
+      );
+      if (!confirmed) return;
+    }
 
     setState(() => _busy.add(id));
     try {
       if (!ref.read(demoModeProvider)) {
-        await SupabaseService.client
-            .from('profiles')
-            .update({'is_active': !isActive}).eq('id', id);
+        await SupabaseService.client.from('profiles').update({
+          'is_active': !isActive,
+          'suspension_reason': isActive ? reason : null,
+        }).eq('id', id);
         await logAdminAction(
             action: isActive ? 'Suspendió usuario' : 'Reactivó usuario',
-            targetTable: 'profiles', targetId: id, details: {'name': name});
+            targetTable: 'profiles', targetId: id,
+            details: isActive ? {'name': name, 'reason': reason} : {'name': name});
         ref.invalidate(adminRecentUsersProvider);
         ref.invalidate(adminAllUsersProvider);
       }

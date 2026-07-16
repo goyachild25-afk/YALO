@@ -14,6 +14,13 @@ final userRoleProvider = Provider<UserRole?>((ref) {
   return ref.watch(currentUserProvider).valueOrNull?.role;
 });
 
+// ─── is_active sincrónico (para que el router cierre sesión si lo suspenden
+// mientras está adentro). true por defecto mientras el perfil aún carga —
+// solo bloqueamos cuando sabemos con certeza que está inactivo.
+final isActiveProvider = Provider<bool>((ref) {
+  return ref.watch(currentUserProvider).valueOrNull?.isActive ?? true;
+});
+
 // ─── Perfil del usuario actual ────────────────────────────────────────────────
 final currentUserProvider = FutureProvider<UserModel?>((ref) async {
   // Modo demo: devuelve el usuario demo sin tocar Supabase
@@ -122,7 +129,7 @@ class AuthController extends StateNotifier<AsyncValue<void>> {
       if (response.user != null) {
         final existing = await SupabaseService.client
             .from('profiles')
-            .select('id')
+            .select('id, is_active, suspension_reason')
             .eq('id', response.user!.id)
             .maybeSingle();
 
@@ -141,6 +148,13 @@ class AuthController extends StateNotifier<AsyncValue<void>> {
             province: meta['province'] as String? ?? '',
             city: meta['city'] as String? ?? '',
           );
+        } else if (existing['is_active'] == false) {
+          // Cuenta suspendida por un admin: no dejamos la sesión activa.
+          await SupabaseService.client.auth.signOut();
+          final reason = existing['suspension_reason'] as String?;
+          throw Exception(reason == null || reason.isEmpty
+              ? 'Esta cuenta está suspendida. Contacta a soporte@yalo.do.'
+              : 'Esta cuenta está suspendida: $reason\n\nSi crees que es un error, escribe a soporte@yalo.do.');
         }
       }
 

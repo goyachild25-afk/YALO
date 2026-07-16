@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../features/auth/providers/auth_provider.dart';
 import '../../features/auth/models/user_model.dart';
 import '../../core/services/demo_provider.dart';
+import '../../core/services/supabase_service.dart';
 import '../../features/auth/screens/splash_screen.dart';
 import '../../features/auth/screens/onboarding_screen.dart';
 import '../../features/auth/screens/login_screen.dart';
@@ -110,6 +111,7 @@ final routerProvider = Provider<GoRouter>((ref) {
   ref.onDispose(refresh.dispose);
   ref.listen(authStateProvider, (_, __) => refresh.value++);
   ref.listen(userRoleProvider, (_, __) => refresh.value++);
+  ref.listen(isActiveProvider, (_, __) => refresh.value++);
   // Mantenimiento: lo lee en Realtime, así que activar el toggle desde el
   // panel admin bloquea a los usuarios no-admin en la próxima navegación
   // sin desplegar código.
@@ -140,6 +142,15 @@ final routerProvider = Provider<GoRouter>((ref) {
       // Si el modo mantenimiento se desactivó, sacar al usuario de esa pantalla
       if (!maintenance && path == '/maintenance') {
         return '/';
+      }
+
+      // ── Cuenta suspendida mientras la sesión ya estaba abierta ────────
+      // El login bloquea cuentas suspendidas (AuthController.signIn), pero
+      // si un admin suspende a alguien que ya está adentro, esto lo saca
+      // en la próxima navegación — sin esperar a que la pestaña se recargue.
+      if (isLoggedIn && !isDemo && !ref.read(isActiveProvider) && path != '/login') {
+        SupabaseService.signOut();
+        return '/login';
       }
 
       // Enlace de recuperación de contraseña: Supabase entrega el código de

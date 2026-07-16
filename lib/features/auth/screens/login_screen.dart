@@ -93,6 +93,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   String _mapError(String error) {
     final e = error.toLowerCase();
+    if (e.contains('suspendida')) {
+      // Mensaje ya armado en AuthController.signIn con el motivo real —
+      // no lo reemplazamos por uno genérico. Quitamos el prefijo "Exception: ".
+      return error.replaceFirst('Exception: ', '');
+    }
     if (e.contains('invalid login credentials') ||
         e.contains('invalid_credentials') ||
         e.contains('wrong password')) {
