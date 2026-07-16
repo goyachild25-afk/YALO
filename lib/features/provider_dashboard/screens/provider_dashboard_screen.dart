@@ -300,9 +300,12 @@ class ProviderDashboardScreen extends ConsumerWidget {
               loading: () => const _BookingsSkeletonList(),
               error: (e, _) => Center(child: Text('Error: $e')),
               data: (bookings) {
-                // Filter out completed and rejected bookings
+                // Filter out completed, rejected and cancelled bookings
                 final activeBookings = bookings
-                    .where((b) => b['status'] != 'completed' && b['status'] != 'rejected')
+                    .where((b) =>
+                        b['status'] != 'completed' &&
+                        b['status'] != 'rejected' &&
+                        b['status'] != 'cancelled')
                     .toList();
                 if (activeBookings.isEmpty) return _buildEmptyBookings();
                 final list = activeBookings.take(10).toList();
@@ -1103,7 +1106,61 @@ class _BookingRequestCardState extends ConsumerState<_BookingRequestCard> {
     await _updateStatus('completed');
   }
 
-  Future<void> _updateStatus(String newStatus) async {
+  Future<void> _confirmCancelAccepted() async {
+    final controller = TextEditingController();
+    final reason = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Cancelar servicio'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'El cliente será notificado. Cuéntale brevemente por qué cancelas — ayuda si hay una disputa.',
+              style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: controller,
+              autofocus: true,
+              maxLines: 2,
+              decoration: const InputDecoration(
+                hintText: 'Ej: emergencia familiar, no puedo llegar a tiempo…',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Volver'),
+          ),
+          TextButton(
+            style: TextButton.styleFrom(foregroundColor: AppColors.error),
+            onPressed: () {
+              final text = controller.text.trim();
+              if (text.isEmpty) return;
+              Navigator.of(ctx).pop(text);
+            },
+            child: const Text('Cancelar servicio'),
+          ),
+        ],
+      ),
+    );
+    if (reason == null || reason.isEmpty) return;
+
+    final existingNotes = widget.booking['notes'] as String?;
+    final mergedNotes = [
+      if (existingNotes != null && existingNotes.trim().isNotEmpty) existingNotes,
+      'Cancelado por el prestador: $reason',
+    ].join('\n\n');
+
+    await _updateStatus('cancelled', extraFields: {'notes': mergedNotes});
+  }
+
+  Future<void> _updateStatus(String newStatus, {Map<String, dynamic>? extraFields}) async {
     setState(() => _loading = true);
     try {
       final isDemo = ref.read(demoModeProvider);
@@ -1143,6 +1200,7 @@ class _BookingRequestCardState extends ConsumerState<_BookingRequestCard> {
         await SupabaseService.client.from('bookings').update({
           'status': newStatus,
           'updated_at': DateTime.now().toIso8601String(),
+          ...?extraFields,
         }).eq('id', widget.booking['id']);
       } else {
         await Future.delayed(const Duration(milliseconds: 400));
@@ -1156,6 +1214,7 @@ class _BookingRequestCardState extends ConsumerState<_BookingRequestCard> {
         switch (newStatus) {
           case 'accepted': msg = '✅ Solicitud aceptada'; color = AppColors.success;
           case 'rejected': msg = 'Solicitud rechazada'; color = AppColors.error;
+          case 'cancelled': msg = 'Servicio cancelado'; color = AppColors.error;
           case 'in_progress': msg = '🔄 En progreso'; color = AppColors.info;
           case 'completed': msg = '🎉 Servicio completado'; color = AppColors.primary;
           default: msg = 'Estado actualizado'; color = AppColors.textSecondary;
@@ -1192,6 +1251,7 @@ class _BookingRequestCardState extends ConsumerState<_BookingRequestCard> {
       case 'pending':  statusColor = AppColors.warning; statusBg = AppColors.warningLight; statusLabel = 'Pendiente';
       case 'accepted': statusColor = AppColors.success; statusBg = AppColors.successLight; statusLabel = 'Aceptado';
       case 'completed': statusColor = AppColors.primary; statusBg = AppColors.surfaceVariant; statusLabel = 'Completado';
+      case 'cancelled': statusColor = AppColors.error;   statusBg = AppColors.errorLight;   statusLabel = 'Cancelado por ti';
       default:         statusColor = AppColors.error;   statusBg = AppColors.errorLight;   statusLabel = 'Rechazado';
     }
 
@@ -1332,7 +1392,7 @@ class _BookingRequestCardState extends ConsumerState<_BookingRequestCard> {
                   label: const Text('Cancelar servicio'),
                   style: OutlinedButton.styleFrom(foregroundColor: AppColors.error,
                       side: const BorderSide(color: AppColors.error)),
-                  onPressed: () => _updateStatus('rejected'),
+                  onPressed: _confirmCancelAccepted,
                 ),
               ),
             ],
