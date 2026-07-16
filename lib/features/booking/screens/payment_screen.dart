@@ -83,7 +83,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Garantizar el pago'),
+        title: const Text('Confirmar reserva'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.pop(),
@@ -170,13 +170,9 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
             ),
             const SizedBox(height: 24),
 
-            // ── Métodos de pago ──────────────────────────────────
-            _SectionTitle('Método de pago'),
+            // ── Cómo pagarás ──────────────────────────────────────
+            _SectionTitle('Cómo pagarás'),
             const SizedBox(height: 12),
-            _PaymentMethodSelector(),
-            const SizedBox(height: 24),
-
-            // ── Cómo funciona el escrow ───────────────────────────
             Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
@@ -190,11 +186,11 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
                 children: [
                   const Row(
                     children: [
-                      Icon(Icons.lock_outline,
+                      Icon(Icons.info_outline,
                           color: AppColors.primary, size: 18),
                       SizedBox(width: 8),
                       Text(
-                        '¿Cómo funciona la garantía?',
+                        'Qué pasa al confirmar',
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w700,
@@ -205,60 +201,32 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
                   ),
                   const SizedBox(height: 10),
                   _EscrowStep(
-                    icon: Icons.credit_card_outlined,
-                    text:
-                        'Tu tarjeta se reserva HOY. No se cobra ningún dinero.',
+                    icon: Icons.event_available_outlined,
+                    text: 'Confirmas la reserva ahora. No se te cobra nada.',
                   ),
                   _EscrowStep(
                     icon: Icons.handyman_outlined,
-                    text: 'El prestador realiza el servicio con total confianza.',
+                    text: 'El prestador realiza el servicio.',
                   ),
                   _EscrowStep(
-                    icon: Icons.check_circle_outline,
+                    icon: Icons.payments_outlined,
                     text:
-                        'Al marcar el servicio como completado, el cobro se realiza automáticamente.',
+                        'Le pagas al prestador directamente (efectivo u otro método que acuerden) al recibir el servicio.',
                   ),
                   _EscrowStep(
-                    icon: Icons.security_outlined,
+                    icon: Icons.support_agent_outlined,
                     text:
-                        'Si el servicio no se realiza, tu dinero está 100% protegido.',
+                        'Si algo sale mal, puedes reportarlo desde "Mis servicios" para mediación.',
                     isLast: true,
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // ── Seguridad Stripe ─────────────────────────────────
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: AppColors.successLight,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Row(
-                children: [
-                  Icon(Icons.verified_outlined,
-                      color: AppColors.success, size: 18),
-                  SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Reserva 100% segura. Nunca almacenamos tus datos de pago.',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: AppColors.success,
-                        height: 1.4,
-                      ),
-                    ),
                   ),
                 ],
               ),
             ),
             const SizedBox(height: 32),
 
-            // ── Botón garantizar ─────────────────────────────────
+            // ── Botón confirmar ───────────────────────────────────
             PrimaryButton(
-              label: 'Garantizar ${_format(widget.amount)} 🔒',
+              label: 'Confirmar reserva — ${_format(widget.amount)}',
               onPressed: _pay,
               isLoading: _isProcessing,
             ),
@@ -392,139 +360,7 @@ class _PriceRow extends StatelessWidget {
   }
 }
 
-class _PaymentMethodSelector extends StatefulWidget {
-  @override
-  State<_PaymentMethodSelector> createState() => _PaymentMethodSelectorState();
-}
-
-class _PaymentMethodSelectorState extends State<_PaymentMethodSelector> {
-  int _selected = 0; // 0 = tarjeta, 1 = PayPal (próximamente)
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        _MethodTile(
-          icon: Icons.credit_card,
-          label: 'Tarjeta de crédito / débito',
-          subtitle: 'Visa, Mastercard, American Express',
-          selected: _selected == 0,
-          onTap: () => setState(() => _selected = 0),
-        ),
-        const SizedBox(height: 8),
-        _MethodTile(
-          icon: Icons.phone_android,
-          label: 'PayPal',
-          subtitle: 'Próximamente disponible',
-          selected: _selected == 1,
-          onTap: null, // deshabilitado por ahora
-          disabled: true,
-        ),
-      ],
-    );
-  }
-}
-
-class _MethodTile extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String subtitle;
-  final bool selected;
-  final VoidCallback? onTap;
-  final bool disabled;
-
-  const _MethodTile({
-    required this.icon,
-    required this.label,
-    required this.subtitle,
-    required this.selected,
-    required this.onTap,
-    this.disabled = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: disabled ? null : onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: selected
-              ? AppColors.primaryLighter.withValues(alpha: 0.2)
-              : AppColors.surface,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: selected ? AppColors.primary : AppColors.divider,
-            width: selected ? 1.5 : 1,
-          ),
-        ),
-        child: Row(
-          children: [
-            Icon(
-              icon,
-              color: disabled
-                  ? AppColors.textHint
-                  : (selected ? AppColors.primary : AppColors.textSecondary),
-              size: 22,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    label,
-                    style: TextStyle(
-                      fontWeight: FontWeight.w500,
-                      fontSize: 14,
-                      color: disabled
-                          ? AppColors.textHint
-                          : AppColors.textPrimary,
-                    ),
-                  ),
-                  Text(
-                    subtitle,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            if (!disabled)
-              Icon(
-                selected
-                    ? Icons.radio_button_checked
-                    : Icons.radio_button_unchecked,
-                color: selected ? AppColors.primary : AppColors.textHint,
-                size: 20,
-              ),
-            if (disabled)
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceVariant,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: const Text(
-                  'Próximo',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: AppColors.textHint,
-                  ),
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ── Paso del flujo de escrow ──────────────────────────────────────────────────
+// ── Paso del flujo de reserva ─────────────────────────────────────────────────
 class _EscrowStep extends StatelessWidget {
   final IconData icon;
   final String text;
