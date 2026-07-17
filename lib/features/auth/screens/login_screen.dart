@@ -4,6 +4,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/auth_provider.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/theme/app_color_tokens.dart';
 import '../../../core/services/demo_provider.dart';
 import '../../../core/services/supabase_service.dart';
 import '../../../features/onboarding_flow/providers/onboarding_provider.dart';
@@ -152,12 +153,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ),
                     ),
                     const SizedBox(height: 10),
-                    const Text(
+                    Text(
                       'YALO',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w800,
-                        color: AppColors.textPrimary,
+                        color: context.colors.textPrimary,
                         letterSpacing: -0.3,
                       ),
                     ),
@@ -165,7 +166,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 ),
               ),
               const SizedBox(height: 32),
-              const Center(
+              Center(
                 child: Column(
                   children: [
                     Text(
@@ -174,16 +175,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       style: TextStyle(
                         fontSize: 26,
                         fontWeight: FontWeight.w700,
-                        color: AppColors.textPrimary,
+                        color: context.colors.textPrimary,
                         letterSpacing: -0.3,
                       ),
                     ),
-                    SizedBox(height: 6),
+                    const SizedBox(height: 6),
                     Text(
                       'Ingresa con tu cuenta para continuar',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                          fontSize: 14, color: AppColors.textSecondary),
+                          fontSize: 14, color: context.colors.textSecondary),
                     ),
                   ],
                 ),
@@ -238,17 +239,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 ),
               ),
               const SizedBox(height: 32),
-              const Row(
+              Row(
                 children: [
-                  Expanded(child: Divider()),
+                  const Expanded(child: Divider()),
                   Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 12),
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
                     child: Text(
                       '¿No tienes cuenta?',
-                      style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                      style: TextStyle(color: context.colors.textSecondary, fontSize: 13),
                     ),
                   ),
-                  Expanded(child: Divider()),
+                  const Expanded(child: Divider()),
                 ],
               ),
               const SizedBox(height: 20),
@@ -308,9 +309,9 @@ class _DemoSection extends ConsumerWidget {
           ],
         ),
         const SizedBox(height: 6),
-        const Text(
+        Text(
           'Explora la app sin crear cuenta',
-          style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+          style: TextStyle(fontSize: 12, color: context.colors.textSecondary),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 14),

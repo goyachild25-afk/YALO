@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../constants/app_colors.dart';
+import 'app_color_tokens.dart';
 
 /// Tema "Brisa Caribeña" — YALO
 ///
@@ -14,6 +15,12 @@ class AppTheme {
   // Paleta oscura — se construye a partir de los colores del brand
   // conservando la identidad tropical pero con superficies profundas para
   // reducir fatiga visual en usuarios sensibles a la luz.
+  //
+  // IMPORTANTE: estos valores deben coincidir exactamente con
+  // AppColorTokens.dark (app_color_tokens.dart) — Dart no permite acceder
+  // a campos de una instancia const de una clase que extiende
+  // ThemeExtension dentro de otra expresión const, así que no se pueden
+  // referenciar directamente y quedan duplicados a propósito.
   static const _darkBg = Color(0xFF0A1C2C);        // Océano nocturno
   static const _darkSurface = Color(0xFF122A3D);   // Marea profunda
   static const _darkSurfaceVariant = Color(0xFF1B3A52);
@@ -132,6 +139,7 @@ class AppTheme {
       snackBarTheme: base.snackBarTheme.copyWith(
         backgroundColor: _darkSurfaceVariant,
       ),
+      extensions: const [AppColorTokens.dark],
     );
   }
 
@@ -474,6 +482,7 @@ class AppTheme {
         linearTrackColor: AppColors.primaryLighter,
         circularTrackColor: AppColors.primaryLighter,
       ),
+      extensions: const [AppColorTokens.light],
     );
   }
 }
