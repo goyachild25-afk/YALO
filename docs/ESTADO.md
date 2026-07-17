@@ -2,12 +2,27 @@
 
 > Documento vivo. Se actualiza cada vez que se despliega algo importante. Si estás leyendo esto en una sesión nueva de Claude Code: este archivo es la fuente de verdad del **estado** del proyecto (qué funciona, qué falta, incidentes). Para arquitectura, backend, configuración y seguridad ver los demás archivos en [`docs/`](.).
 
-**Última actualización:** 2026-07-16
+**Última actualización:** 2026-07-16 (actualizado varias veces durante el día)
 **Repo:** `goyachild25-afk/YALO`
 **URL en producción:** https://goyachild25-afk.github.io/YALO/
 **Supabase project ref:** `ivexcnunszcqoqzzdlfz`
 
 ---
+
+## ⚠️ Incidente resuelto (2026-07-16): exposición de datos por políticas RLS demasiado permisivas
+
+Durante una auditoría de las políticas de RLS se encontraron 3 políticas de
+lectura (en `profiles`, `bookings` y `chat_messages`) que eran mucho más
+permisivas de lo necesario, permitiendo acceso a datos que no debían ser
+visibles fuera de su dueño/participantes legítimos. Corregido de inmediato:
+se eliminaron esas políticas y se confirmó que las políticas más acotadas
+que ya existían en paralelo cubren todo el acceso legítimo (verificado
+contra el código real de la app, sin ningún caso roto). Verificado también
+con consultas simulando distintos roles — 0 filas visibles fuera de lo
+esperado. No se detallan aquí los mecanismos específicos por ser un
+repositorio público. Sigue pendiente una revisión más amplia de las
+políticas de `bookings` (tiene bastante acumulación histórica de políticas
+redundantes, aunque ya no peligrosas) — ver Pendiente → Deuda técnica.
 
 ## ⚠️ Incidente resuelto (2026-07-16): la suspensión de usuarios no bloqueaba el acceso
 
@@ -134,7 +149,8 @@ Cashback 2-3% en puntos por pagar dentro de la app (canjeable como descuento, ex
 
 ### 5. Deuda técnica
 - Modo oscuro: piloto iniciado 2026-07-16. Medido el alcance real: **1,271 usos de `AppColors.*` en 57 archivos** (no solo textPrimary). Se creó `AppColorTokens` (`lib/core/theme/app_color_tokens.dart`, `ThemeExtension` registrada en `AppTheme.light`/`AppTheme.dark`) con los 8 colores que sí necesitan variar (texto, fondo, superficie, bordes) — se accede vía `context.colors.X`. `login_screen.dart` ya migrado como prueba del patrón. Modo claro queda bit-a-bit idéntico (mismo valor, cero riesgo). **No verificado visualmente todavía** — la automatización de captura de pantalla no funcionó de forma confiable en este entorno (Flutter Web pinta a canvas, no hay texto real en el DOM; el dev server se degrada tras varias reconexiones headless). Antes de seguir migrando pantallas: correr `flutter run -d chrome` local, activar temporalmente `dark`/`system` en `AppThemeMode` (accessibility_service.dart) y confirmar visualmente que el contraste se ve bien. El toggle sigue oculto para usuarios reales hasta terminar la migración.
-- Reforzar RLS con verificación de `is_active` en las tablas de negocio (defensa en profundidad — el bloqueo principal de la suspensión ya funciona, ver incidente resuelto arriba). Requiere revisar primero las políticas existentes de `bookings` y afines, que tienen bastante acumulación histórica (varias políticas superpuestas por tabla) — mejor hacerlo con un branch de Supabase para probar sin tocar producción directo.
+- Reforzar RLS con verificación de `is_active` en las tablas de negocio (defensa en profundidad — el bloqueo principal de la suspensión ya funciona, ver incidente resuelto arriba).
+- Limpieza general de políticas RLS redundantes (no peligrosas, solo acumulación histórica) — `bookings` tiene varias políticas SELECT/UPDATE que se solapan sin necesidad. Mejor hacerlo con un branch de Supabase para probar sin tocar producción directo.
 
 ### 6. Bloqueado por el usuario (no accionable por Claude sin su intervención)
 - Revisión legal de Términos/Privacidad por abogado dominicano — v4 ya incorpora una ronda de revisión preliminar (fuerza mayor, propiedad intelectual, renuncia de garantías, reparación en especie sin efectivo, marca, impuestos del prestador — ver `lib/features/safety/screens/terms_screen.dart`), pero sigue pendiente la firma de un abogado licenciado
