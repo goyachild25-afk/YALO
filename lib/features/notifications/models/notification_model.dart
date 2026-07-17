@@ -5,6 +5,8 @@ enum NotificationType {
   newBookingRequest,
   newReview,
   requestExpired,
+  bookingReminder,
+  disputeResolved,
 }
 
 class AppNotification {

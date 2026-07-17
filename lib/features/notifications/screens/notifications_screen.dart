@@ -201,6 +201,10 @@ class _NotificationTile extends ConsumerWidget {
         return Icons.star_outline;
       case NotificationType.requestExpired:
         return Icons.hourglass_disabled_outlined;
+      case NotificationType.bookingReminder:
+        return Icons.alarm_outlined;
+      case NotificationType.disputeResolved:
+        return Icons.gavel_outlined;
     }
   }
 
@@ -218,6 +222,10 @@ class _NotificationTile extends ConsumerWidget {
         return AppColors.goldDark;
       case NotificationType.requestExpired:
         return AppColors.textSecondary;
+      case NotificationType.bookingReminder:
+        return AppColors.info;
+      case NotificationType.disputeResolved:
+        return AppColors.primary;
     }
   }
 }

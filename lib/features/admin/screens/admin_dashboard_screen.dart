@@ -986,6 +986,37 @@ class _DisputesTabState extends ConsumerState<_DisputesTab> {
           'resolution': resolution,
           'resolved_at': DateTime.now().toIso8601String(),
         }).eq('id', id);
+
+        // report_dispute_screen.dart le promete al usuario "te
+        // notificaremos sobre el resultado" — nada cumplía esa promesa,
+        // resolver una disputa no tenía ningún efecto fuera de su propia
+        // fila. Avisamos a ambas partes.
+        final reporterId = dispute['reporter_id'] as String?;
+        final reportedId = dispute['reported_id'] as String?;
+        final notifRows = [
+          if (reporterId != null)
+            {
+              'user_id': reporterId,
+              'type': 'disputeResolved',
+              'title': 'Tu reporte fue resuelto',
+              'body': resolution,
+            },
+          if (reportedId != null)
+            {
+              'user_id': reportedId,
+              'type': 'disputeResolved',
+              'title': 'Una disputa sobre ti fue resuelta',
+              'body': resolution,
+            },
+        ];
+        if (notifRows.isNotEmpty) {
+          try {
+            await SupabaseService.client.from('notifications').insert(notifRows);
+          } catch (_) {
+            // No bloqueamos la resolución si falla el aviso.
+          }
+        }
+
         ref.invalidate(adminDisputesProvider);
         ref.invalidate(adminStatsProvider);
       }
