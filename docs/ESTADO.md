@@ -2,12 +2,54 @@
 
 > Documento vivo. Se actualiza cada vez que se despliega algo importante. Si estás leyendo esto en una sesión nueva de Claude Code: este archivo es la fuente de verdad del **estado** del proyecto (qué funciona, qué falta, incidentes). Para arquitectura, backend, configuración y seguridad ver los demás archivos en [`docs/`](.).
 
-**Última actualización:** 2026-07-16 (actualizado varias veces durante el día)
+**Última actualización:** 2026-07-17
 **Repo:** `goyachild25-afk/YALO`
 **URL en producción:** https://goyachild25-afk.github.io/YALO/
 **Supabase project ref:** `ivexcnunszcqoqzzdlfz`
 
 ---
+
+## ⚠️ Incidente resuelto (2026-07-17): auditoría amplia — verificación de identidad, notificaciones, exportar datos
+
+Auditoría libre de todo el código buscando el mismo patrón de bugs que ya
+había aparecido varias veces: cosas que aparentan funcionar pero no.
+Encontrado y corregido:
+
+- **La verificación de identidad obligatoria no se aplicaba a nivel de base
+  de datos** — solo la pantalla bloqueaba el botón, pero la política RLS
+  real que permite aceptar una reserva (abierta o directa) no comprobaba
+  nada. Cerrado en ambos caminos de asignar un prestador a una reserva; de
+  paso se ocultan los prestadores no verificados de la lista y el buscador
+  para que el cliente ni siquiera pueda elegirlos.
+- **Cualquier usuario logueado podía insertarle notificaciones falsas a
+  cualquier otro usuario** (política sin restricción real). Cerrado — no
+  afecta a los triggers/Edge Functions que sí las envían de verdad, esos
+  no pasan por esa política.
+- **Un prestador rechazado en su verificación no podía reenviarla nunca**
+  — faltaba la política que permite corregir y reenviar la propia
+  solicitud tras un rechazo.
+- **Notificaciones duplicadas:** dos generaciones de triggers en
+  `bookings` insertaban 2 veces la misma notificación (aceptar, rechazar,
+  completar, solicitud directa nueva) — una de las dos ni siquiera se
+  podía tocar. Se dejó solo la generación completa y correcta.
+- **El banner y el contador de notificaciones no se actualizaban en
+  vivo** — la tabla no estaba en la publicación de Realtime (mismo patrón
+  que otros hallazgos previos).
+- **"Descargar mis datos" (Ley 172-13) le devolvía datos incompletos a
+  los prestadores** — sus propias reservas y servicios no aparecían por
+  un desajuste de ids entre tablas. Corregido en la Edge Function.
+- **Resolver una disputa no tenía ningún efecto para las partes
+  involucradas**, pese a que la pantalla de reporte promete avisar del
+  resultado. Ahora sí se notifica a ambas partes al resolver.
+- Un par de notificaciones se mostraban con el ícono equivocado por un
+  tipo no reconocido en la app (recordatorio de reserva, disputa
+  resuelta) — agregados al modelo.
+- El filtro "Más cercanos" se quedaba en silencio con el orden anterior
+  si no había permiso de ubicación, sin avisar que no se pudo ordenar por
+  distancia — ahora muestra un aviso.
+
+No se detallan mecanismos de explotación específicos por ser un
+repositorio público.
 
 ## ⚠️ Incidente resuelto (2026-07-16): exposición de datos por políticas RLS demasiado permisivas
 
@@ -153,6 +195,9 @@ Cashback 2-3% en puntos por pagar dentro de la app (canjeable como descuento, ex
 - ~~Limpieza de políticas RLS redundantes~~ — hecho 2026-07-16, en dos pasadas:
   - `bookings`: 13 políticas (6 SELECT + 6 UPDATE + 1 INSERT) → 6. Cerrado un hueco de `WITH CHECK` en UPDATE (verificado contra cada `.update()` real del código).
   - `provider_profiles` (5→3), `provider_services` (4→4, pero corregido), `reviews` (5→4): quitados duplicados exactos de lectura pública (intencional, es un marketplace). En `provider_services` se cerró el mismo hueco de `WITH CHECK` en UPDATE y **se agregó la política de DELETE que faltaba por completo** — sin ella, reemplazar los servicios del prestador durante el onboarding borraba 0 filas en silencio (bug funcional, no de seguridad).
+- Código muerto de push vía Firebase (`supabase/functions/send-notification`, migración de `device_tokens`) — la tabla `device_tokens` ni siquiera existe en la BD real, nada lo invoca. Sin impacto, solo confunde a quien lea el repo. Se puede borrar cuando alguien lo note.
+- Varios objetos desplegados no están versionados como migración/función local (además de `export-my-data`, ya agregado hoy) — quedan desincronizados entre lo que se ve en el repo y lo que corre en producción. Vale la pena una pasada para traer todo lo que falta.
+- `export-my-data` no incluye reseñas *recibidas* (`client_ratings`, ni las `reviews` donde el usuario es el prestador reseñado) — solo lo que el usuario escribió. No confirmado como bug (no se verificó si esto se considera parte de "sus datos" bajo la Ley 172-13), solo una nota de alcance para revisar.
 
 ### 6. Bloqueado por el usuario (no accionable por Claude sin su intervención)
 - Revisión legal de Términos/Privacidad por abogado dominicano — v4 ya incorpora una ronda de revisión preliminar (fuerza mayor, propiedad intelectual, renuncia de garantías, reparación en especie sin efectivo, marca, impuestos del prestador — ver `lib/features/safety/screens/terms_screen.dart`), pero sigue pendiente la firma de un abogado licenciado

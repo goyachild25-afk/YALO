@@ -80,6 +80,13 @@ class _ProvidersListScreenState extends ConsumerState<ProvidersListScreen> {
   @override
   Widget build(BuildContext context) {
     final providersAsync = ref.watch(providersListProvider(widget.categoryId));
+    // Solo se observa cuando hace falta — evita pedir/vigilar ubicación en
+    // los otros modos de orden.
+    final locAsync =
+        _sortBy == 'distance' ? ref.watch(userLocationProvider) : null;
+    final locationUnavailable = locAsync != null &&
+        !locAsync.isLoading &&
+        locAsync.valueOrNull == null;
 
     return Scaffold(
       appBar: AppBar(
@@ -107,6 +114,7 @@ class _ProvidersListScreenState extends ConsumerState<ProvidersListScreen> {
           if (widget.filterNotes != null && widget.filterNotes!.isNotEmpty)
             _FilterSummaryBanner(notes: widget.filterNotes!),
           _buildFilterChips(),
+          if (locationUnavailable) const _LocationUnavailableBanner(),
           Expanded(
             child: providersAsync.when(
               loading: () => _buildShimmerList(),
@@ -141,7 +149,7 @@ class _ProvidersListScreenState extends ConsumerState<ProvidersListScreen> {
                   sorted.sort(
                       (a, b) => b.completedJobs.compareTo(a.completedJobs));
                 } else if (_sortBy == 'distance') {
-                  final loc = ref.watch(userLocationProvider).valueOrNull;
+                  final loc = locAsync?.valueOrNull;
                   if (loc != null) {
                     double? distTo(p) {
                       if (p.latitude == null || p.longitude == null) return null;
@@ -300,6 +308,39 @@ class _ProvidersListScreenState extends ConsumerState<ProvidersListScreen> {
 }
 
 // ── Banner de resumen de filtros ─────────────────────────────────────────────
+// "Más cercanos" pedía la ubicación en silencio: si no había permiso o el
+// GPS no respondía, la lista se quedaba en el orden anterior sin avisar —
+// indistinguible de un orden por distancia real que funcionó.
+class _LocationUnavailableBanner extends StatelessWidget {
+  const _LocationUnavailableBanner();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: AppColors.warningLight,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.warning, width: 1),
+      ),
+      child: const Row(
+        children: [
+          Icon(Icons.location_off_outlined, size: 18, color: AppColors.warning),
+          SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'No pudimos acceder a tu ubicación — mostrando el orden anterior. Activa el permiso de ubicación para ver los más cercanos primero.',
+              style: TextStyle(fontSize: 12, color: AppColors.textPrimary),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _FilterSummaryBanner extends StatelessWidget {
   final String notes;
 
